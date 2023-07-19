@@ -1,5 +1,10 @@
+/*
+    IMPORTANT NOTE
+    Currently, this is the AI file exactly as copied from MachTarok and without GPU acceleration
+*/
+
+
 const math = require('mathjs');
-const Deck = require('./deck.js');
 const { SUIT,
     SUIT_REVERSE,
     RED_VALUE,
@@ -12,10 +17,8 @@ const { SUIT,
     PLAYER_TYPE } = require('./enums.js');
 let h5wasm = null;
 async function importH5wasm() {
-    //TODO: uncomment. For some reason H5 really likes to spam the console when the server crashes
-    //if (!DEBUG_MODE) {
-        return;
-    //}
+    //TODO: remove return. For some reason H5 really likes to spam the console when the server crashes
+    return;
     h5wasm = await import("h5wasm");
     await h5wasm.ready;
     aiFromFile('latest.h5');
@@ -298,220 +301,6 @@ class AI {
     }
 */
 
-    static generateInputs(room, pn, action, cardPrompt) {
-        const thePlayers = room.players;
-        const theBoard = room.board;
-        let inputs = [];
-
-        //Chips
-        inputs.push(AI.sigmoid(thePlayers[playerOffset(pn, 0)].chips/100));
-        inputs.push(AI.sigmoid(thePlayers[playerOffset(pn, 1)].chips/100));
-        inputs.push(AI.sigmoid(thePlayers[playerOffset(pn, 2)].chips/100));
-        inputs.push(AI.sigmoid(thePlayers[playerOffset(pn, 3)].chips/100));
-
-        //Povinnost
-        let povinnostVector = new Array(4).fill(0);
-        if (theBoard.povinnost != -1) {
-            povinnostVector[playerPerspective(theBoard.povinnost, pn)] = 1;
-        }
-        inputs = inputs.concat(povinnostVector);
-
-        //Prever
-        let preverVector = new Array(4).fill(0);
-        if (theBoard.prever != -1) {
-            preverVector[playerPerspective(theBoard.prever, pn)] = 1;
-        }
-        inputs = inputs.concat(preverVector);
-
-        //Prever talon doubling
-        inputs.push(theBoard.preverTalonStep > 1 ? 1 : 0);
-        inputs.push(theBoard.preverTalonStep > 2 ? 1 : 0);
-
-        //Moneycards
-        let moneyCardsVector = new Array(32).fill(0);
-        const decodeMoneyCards = {'Uni':0,'Bida':1,'Taroky':2,'Tarocky':3,'Trul':4,'Rosa-Honery+':5,'Rosa-Honery':6,'Honery':7};
-        for (let i in theBoard.moneyCards) {
-            for (let j in theBoard.moneyCards[i]) {
-                moneyCardsVector[decodeMoneyCards[j]*4 + playerPerspective(i,pn)];
-            }
-        }
-        inputs = inputs.concat(moneyCardsVector);
-
-        //Valat
-        let valatVector = new Array(4).fill(0);
-        if (theBoard.valat != -1) {
-            valatVector[playerPerspective(theBoard.valat, pn)] = 1;
-        }
-        inputs = inputs.concat(valatVector);
-
-        //I on the End
-        let ioteVector = new Array(4).fill(0);
-        if (theBoard.iote != -1) {
-            ioteVector[playerPerspective(theBoard.iote, pn)] = 1;
-        }
-        inputs = inputs.concat(ioteVector);
-
-        //Contra
-        let contraVector = new Array(4).fill(0);
-        if (theBoard.iote != -1) {
-            contraVector[playerPerspective(theBoard.calledContra, pn)] = 1;
-        }
-        inputs = inputs.concat(contraVector);
-
-        //Rhea-Contra
-        let rheaContraVector = new Array(4).fill(0);
-        if (theBoard.iote != -1) {
-            rheaContraVector[playerPerspective(theBoard.rheaContra, pn)] = 1;
-        }
-        inputs = inputs.concat(rheaContraVector);
-
-        //Supra-contra
-        let supraContraVector = new Array(4).fill(0);
-        if (theBoard.iote != -1) {
-            supraContraVector[playerPerspective(theBoard.supraContra, pn)] = 1;
-        }
-        inputs = inputs.concat(supraContraVector);
-
-        //PartnerCard
-        inputs.push(theBoard.partnerCard == 'XIX' ? 1 : 0);
-        inputs.push(theBoard.partnerCard == 'XVIII' ? 1 : 0);
-        inputs.push(theBoard.partnerCard == 'XVII' ? 1 : 0);
-        inputs.push(theBoard.partnerCard == 'XVI' ? 1 : 0);
-        inputs.push(theBoard.partnerCard == 'XV' ? 1 : 0);
-        inputs.push(Deck.handContains(thePlayers[pn].hand,theBoard.partnerCard) ? 1 : 0);
-
-        //CURRENT TRICK INFORMATION
-        let leaderVector = new Array(4).fill(0);
-        if (theBoard.leadPlayer != -1) {
-            leaderVector[theBoard.leadPlayer] = 1;
-        }
-        inputs = inputs.concat(leaderVector);
-        let myPositionInTrickVector = new Array(4).fill(0);
-        if (theBoard.leadPlayer != -1) {
-            myPositionInTrickVector[playerPerspective(theBoard.leadPlayer,pn)] = 1;
-        }
-        inputs = inputs.concat(myPositionInTrickVector);
-        inputs = inputs.concat(cardToVector(theBoard.table[0]));
-        inputs = inputs.concat(cardToVector(theBoard.table[1]));
-        inputs = inputs.concat(cardToVector(theBoard.table[2]));
-
-        //TRICK HISTORY
-        for (let i = 0; i<12; i++) {
-            if (theBoard.trickHistory[i]) {
-                inputs.push(1);
-                let trickLeaderVector = new Array(4).fill(0);
-                trickLeaderVector[theBoard.trickHistory[i].leadPlayer] = 1;
-                inputs = inputs.concat(trickLeaderVector);
-
-                let myPositionInHistoryTrickVector = new Array(4).fill(0);
-                myPositionInHistoryTrickVector[playerPerspective(theBoard.trickHistory[i].leadPlayer,pn)] = 1;
-                inputs = inputs.concat(myPositionInHistoryTrickVector);
-
-                let trickWinnerVector = new Array(4).fill(0);
-                trickWinnerVector[theBoard.trickHistory[i].winner] = 1;
-                inputs = inputs.concat(trickWinnerVector);
-
-                inputs = inputs.concat(cardToVector(theBoard.trickHistory[i].cards[0]));
-                inputs = inputs.concat(cardToVector(theBoard.trickHistory[i].cards[1]));
-                inputs = inputs.concat(cardToVector(theBoard.trickHistory[i].cards[2]));
-                inputs = inputs.concat(cardToVector(theBoard.trickHistory[i].cards[3]));
-            } else {
-                inputs = inputs.concat(new Array(129).fill(0));
-            }
-        }
-
-        //MY HAND
-        for (let i=0; i<16; i++) {
-            inputs = inputs.concat(cardToVector(thePlayers[pn].hand[i]));
-        }
-
-        //PREVER TALON
-        for (let i=0; i<6; i++) {
-            inputs = inputs.concat(cardToVector(theBoard.publicPreverTalon[i]));
-        }
-        inputs.push(theBoard.preverTalonStep > 0 ? 0 : 1);
-        inputs.push(theBoard.preverTalonStep > 1 ? 0 : 1);
-        inputs.push(theBoard.preverTalonStep > 2 ? 0 : 1);
-
-        //PARTNER INFORMATION
-        //-Only information the AI should know-
-        inputs.push(
-            (thePlayers[playerOffset(pn,1)].publicTeam != -1) ? thePlayers[playerOffset(pn,1)].publicTeam == thePlayers[pn].publicTeam ? 1 : 0 : 0.5
-        );
-        inputs.push(
-            (thePlayers[playerOffset(pn,2)].publicTeam != -1) ? thePlayers[playerOffset(pn,1)].publicTeam == thePlayers[pn].publicTeam ? 1 : 0 : 0.5
-        );
-        inputs.push(
-            (thePlayers[playerOffset(pn,3)].publicTeam != -1) ? thePlayers[playerOffset(pn,1)].publicTeam == thePlayers[pn].publicTeam ? 1 : 0 : 0.5
-        );
-
-        //TRUMP DISCARD
-        for (let i=0; i<4; i++) {
-            //Povinnost or Prever
-            inputs = inputs.concat(cardToVector(theBoard.trumpDiscarded[0][i]));
-        }
-        inputs = inputs.concat(cardToVector(theBoard.trumpDiscarded[1][0]));
-        inputs = inputs.concat(cardToVector(theBoard.trumpDiscarded[2][0]));
-
-        //CURRENT CARD/ACTION
-        inputs = inputs.concat(cardToVector(cardPrompt));
-        let actionVector = new Array(25).fill(0);
-        actionVector[action] = 1;
-        inputs = inputs.concat(actionVector);
-
-        if (inputs.length != 2523) {
-            SERVER.error('Inputs is incorrect length: ' + inputs.length);
-        }
-
-        return inputs;
-
-        /*Room
-        room['board'] = {the board}
-        room['players'] = [player1, ... player4]
-        */
-
-
-        /*Board
-        this.partnerCard = "";
-        this.talon = [];
-        this.table = [];
-        this.preverTalon = [];
-        this.preverTalonStep = 0;
-        this.prever = -1;
-        this.playingPrever = false;
-        this.povinnost = -1;
-        this.buc = false;
-        this.leadPlayer = -1;
-        this.leadCard = null;
-        this.nextStep = { player: 0, action: 'start', time: Date.now(), info: null };
-        this.cutStyle = '';
-        this.moneyCards = [[], [], [], []];
-        this.valat = -1;
-        this.trickWinCount = [0,0];
-        this.hasTheI = -1;
-        this.iote = -1;
-        this.ioteWin = 0;
-        this.contra = [-1,-1];
-        this.calledContra = -1;
-        this.rheaContra = -1;
-        this.supraContra = -1;
-        this.firstContraPlayer = -1;
-        this.gameNumber = 0;
-        this.importantInfo = {};
-        */
-
-       /*Player
-       this.type = PLAYER_TYPE.HUMAN/ROBOT/AI
-       this.socket = -1
-       this.pid = -1
-       this.chips = 100
-       this.discard = []
-       this.hand = []
-       this.tempHand = []
-       this.isTeamPovinnost = bool
-       */
-    }
-
     get seed() {
         let theSeed = [];
         theSeed.push(this.inputWeights);
@@ -521,26 +310,6 @@ class AI {
         theSeed.push(this.outputBias);
         return theSeed;
     }
-}
-
-//Helper functions
-function playerOffset(startingPlayer, offset) {
-    return (+startingPlayer + +offset)%4;
-}
-
-function playerPerspective(originalPlace, viewpoint) {
-    //Ex. if player 0 is povinnost and player 1 is AI, then from AI's view player 3 is povinnost
-    return ((+originalPlace - +viewpoint) + 4)%4;
-}
-
-function cardToVector(card) {
-    //Should return a 1x27 vector. First 5 elements are suit, next 22 are value. 0 or 1
-    let cardVector = new Array(27).fill(0);
-    if (card) {
-        cardVector[SUIT[card.suit]] = 1;
-        cardVector[VALUE_REVERSE[card.value]+5] = 1;
-    }
-    return cardVector;
 }
 
 module.exports = AI;
