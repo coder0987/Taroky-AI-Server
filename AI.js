@@ -1,11 +1,4 @@
-/*
-    IMPORTANT NOTE
-    Currently, this is the AI file exactly as copied from MachTarok and without GPU acceleration
-*/
-
-
 const math = require('mathjs');
-const Deck = require('./deck.js');
 const Interface = require('./interface.js');
 const { SUIT,
     SUIT_REVERSE,
@@ -141,7 +134,7 @@ class AI {
                 currentRow,
                 this.outputWeights,
                 this.outputBias
-            )[output];
+            )[output]
         );
         return result;
     }

@@ -22,7 +22,7 @@ class Interface {
         if (firstWidth != secondHeight) {
             throw 'Invalid dimensions for matrix multiplication';
         }
-        if (if (firstHeight != thirdHeight || secondWidth != thirdWidth)) {
+        if (firstHeight != thirdHeight || secondWidth != thirdWidth) {
             throw 'Invalid dimensions for matrix addition';
         }
         return (inputs, weights, bias) => {

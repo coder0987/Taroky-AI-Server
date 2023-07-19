@@ -7,8 +7,7 @@ Instead, it must be accessed locally through the MachTarok server, which extends
 
 There are several interface methods, all of which prioritize transmitting as little data as possible
 
-Additionally, this AI server relies heavily on NVIDIA's RAPIDS architecture, so that must be installed before running
-
+Additionally, this AI server relies heavily on GPU JS, so that must be installed before running
 */
 
 const http = require('http');
@@ -53,7 +52,7 @@ const server = http.createServer((req, res) => {
                 return res.end();
         }
     }
-}
+});
 
 //Standard self-battling
 function standardAI(inputs, output) {
@@ -67,3 +66,6 @@ function personalizedAI(inputs, output, id, name) {
     return {answer:players[name].evaluate(inputs, output)};
     //Returns an object so that other parameters can be added in the future
 }
+
+console.log("Listening on port 8441 (Accessible at http://localhost:8441/ )");
+server.listen(8441);

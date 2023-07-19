@@ -1,5 +1,7 @@
 {
   "dependencies": {
-    "gpu.js": "^2.16.0"
+    "express": "^4.18.2",
+    "gpu.js": "^2.16.0",
+    "mathjs": "^11.9.0"
   }
 }
