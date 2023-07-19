@@ -1,5 +1,6 @@
 const math = require('mathjs');
 const Deck = require('./deck.js');
+const Interface = require('./interface.js');
 const { SUIT,
     SUIT_REVERSE,
     RED_VALUE,
@@ -38,30 +39,58 @@ class AI {
             this.outputWeightsSize = [1000,14];
             this.outputBiasSize = [14];
 
+            /* CPU-based mathjs style
             this.inputWeights   = math.random(math.matrix([this.inputWeightsSize[0], this.inputWeightsSize[1]])); // 2k x 1k
             this.layersWeights  = math.random(math.matrix([this.layersWeightsSize[0], this.layersWeightsSize[1], this.layersWeightsSize[2]])); // 20 x 1k x 1k
             this.layersBias     = math.random(math.matrix([this.layersBiasSize[0], this.layersBiasSize[1]])); // 20 x 1k x 1
             this.outputWeights  = math.random(math.matrix([this.outputWeightsSize[1], this.outputWeightsSize[0]])); // 14 x 1k
             this.outputBias     = math.random(math.matrix([this.outputBiasSize[0]])); // 14 x 1
+            */
+            this.inputWeights   = Interface.createRandomMatrix(this.inputWeightsSize[0], this.inputWeightsSize[1]);
+            this.layersWeights  = [];
+            for (let i=0; i<this.layersWeightsSize[0]; i++) {
+                this.layersWeights[i] = Interface.createRandomMatrix(this.layersWeightsSize[1], this.layersWeightsSize[2]);
+            }
+            this.layersBias     = [];
+            for (let i=0; i<this.layersBiasSize[0]; i++) {
+                Interface.createRandomMatrix(this.layersBiasSize[1], 1);
+            }
+            this.outputWeights  = Interface.createRandomMatrix(this.outputWeightsSize[1], this.outputWeightsSize[0]);
+            this.outputBias     = Interface.createRandomMatrix(this.outputBiasSize[0], 1);
 
             mutate = 0;
         }
         if (mutate) {
             //Iterate over each and every weight and bias and add mutate * Math.random() to each
+            /* old mathjs CPU randomization
             this.inputWeights  = math.add(this.inputWeights,  math.random([2523, 1000],     -mutate, mutate));
             this.layersWeights = math.add(this.layersWeights, math.random([20, 1000, 2523], -mutate, mutate));
             this.layersBias    = math.add(this.layersBias,    math.random([21, 1000],       -mutate, mutate));
             this.outputWeights = math.add(this.outputWeights, math.random([14, 1000],       -mutate, mutate));
             this.outputBias    = math.add(this.outputBias,    math.random([14],             -mutate, mutate));
+            */
+            this.inputWeights  = mutateMatrix(this.inputWeights , mutate);
+            this.layersBias    = mutateMatrix(this.layersBias   , mutate);
+            this.outputWeights = mutateMatrix(this.outputWeights, mutate);
+            this.outputBias    = mutateMatrix(this.outputBias   , mutate);
+            for (let i in this.layersWeights) {
+                this.layersWeights[i] = mutateMatrix(this.layersWeights[i], mutate);
+            }
+            for (let i in this.layersBias) {
+                this.layersBias[i] = mutateMatrix(this.layersBias[i], mutate);
+            }
         }
     }
 
     evaluate(inputs, output) {
         let result = 0;
 
-        let currentRow = math.add(math.multiply(inputs, this.inputWeights), this.layersBias.subset(math.index(math.range(0,1),math.range(0,1000))));
-        for (let i=0; i<20; i++) {
-            currentRow = AI.sigmoidMatrix(
+        //let currentRow = math.add(math.multiply(inputs, this.inputWeights), this.layersBias.subset(math.index(math.range(0,1),math.range(0,1000))));
+        let currentRow = Interface.multiplyAndAddMatrix(inputs,this.inputWeights,this.layersBias[0]);
+        currentRow = Interface.sigmoidMatrix(currentRow);
+
+        for (let i=0; i<this.layersWeightsSize[0]; i++) {
+            /*currentRow = AI.sigmoidMatrix(
                 math.add(
                     math.multiply(
                         currentRow,
@@ -76,9 +105,16 @@ class AI {
                             i+1,math.range(0,1000)
                     )))
                 )
+            );*/
+            currentRow = Interface.sigmoidMatrix(
+                Interface.multiplyAndAddMatrix(
+                    currentRow,
+                    this.layersWeights[i],
+                    this.layersBias[i+1]
+                )
             );
         }
-        result = AI.sigmoid(
+        /*result = AI.sigmoid(
             math.add(
                 math.multiply(
                     currentRow,
@@ -93,6 +129,13 @@ class AI {
                     math.index(output)
                 )
             )
+        );*/
+        result = AI.sigmoid(
+            Interface.multiplyAndAddMatrix(
+                currentRow,
+                this.outputWeights,
+                this.outputBias
+            )[output];
         );
         return result;
     }
@@ -106,6 +149,7 @@ class AI {
 
     static sigmoidMatrix(m) {
         //Assumes input to be an N x 1 matrix
+        console.trace('Deprecated. Use Interface.sigmoidMatrix() instead')
         return math.map(math.add(1, math.map(math.subtract(0,m), math.exp)), math.inv);
     }
 
@@ -116,11 +160,11 @@ class AI {
         try {
             const seed = [];
             f = new h5wasm.File(file, "r");
-            seed[0] = math.matrix(f.get('/ai/inputWeights', 'r').to_array());
-            seed[1] = math.matrix(f.get('/ai/layersWeights', 'r').to_array());
-            seed[2] = math.matrix(f.get('/ai/layersBias', 'r').to_array());
-            seed[3] = math.matrix(f.get('/ai/outputWeights', 'r').to_array());
-            seed[4] = math.matrix(f.get('/ai/outputBias', 'r').to_array());
+            seed[0] = f.get('/ai/inputWeights', 'r').to_array();
+            seed[1] = f.get('/ai/layersWeights', 'r').to_array();
+            seed[2] = f.get('/ai/layersBias', 'r').to_array();
+            seed[3] = f.get('/ai/outputWeights', 'r').to_array();
+            seed[4] = f.get('/ai/outputBias', 'r').to_array();
             latestAI = new AI(seed, 0);
             SERVER.log('AI loaded successfully');
         } catch (err) {
@@ -139,6 +183,7 @@ class AI {
             saveFile.create_group('ai');
 
             let tempInputWeights = [];
+            //todo change shape to be a flat array always
             let inputWeightsShape = ai.inputWeightsSize;
             ai.inputWeights.forEach(function (value, index, matrix) {
                 tempInputWeights.push(value);//Lines up the 2d array into 1 dimension
@@ -298,6 +343,7 @@ class AI {
     }
 */
 
+/* INPUT GENERATION IS DONE ON TAROKY SERVER-SIDE
     static generateInputs(room, pn, action, cardPrompt) {
         const thePlayers = room.players;
         const theBoard = room.board;
@@ -464,6 +510,7 @@ class AI {
         }
 
         return inputs;
+        */
 
         /*Room
         room['board'] = {the board}
@@ -510,7 +557,8 @@ class AI {
        this.tempHand = []
        this.isTeamPovinnost = bool
        */
-    }
+    /*
+    }*/
 
     get seed() {
         let theSeed = [];
@@ -522,7 +570,7 @@ class AI {
         return theSeed;
     }
 }
-
+/*These should only be needed for the game server
 //Helper functions
 function playerOffset(startingPlayer, offset) {
     return (+startingPlayer + +offset)%4;
@@ -541,6 +589,6 @@ function cardToVector(card) {
         cardVector[VALUE_REVERSE[card.value]+5] = 1;
     }
     return cardVector;
-}
+}*/
 
 module.exports = AI;
