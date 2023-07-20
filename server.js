@@ -16,13 +16,24 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const math = require('mathjs');
+const { Buffer } = require('node:buffer');
+function bufferToArray(buf){
+    if (buf.length > 0) {
+        const data = new Array(buf.length);
+        for (let i = 0; i < buf.length; i=i+1)
+            data[i] = buf[i];
+        return data;
+    }
+    return [];
+}
+
 
 const app = express();
 
 const AI = require('./AI.js');
 
 //AI variables
-let leader;
+//AI.leader
 let followers = [];
 
 let players = {};
@@ -31,39 +42,74 @@ let personalized;
 //Interface set up
 const server = http.createServer((req, res) => {
     let q = url.parse(req.url, true);
-    if (req.method == 'GET') {
-        //Unlike standard HTTP file-serving, GET in this context is not to get files, but a JSON AI response
+    if (req.method == 'POST') {
+        //Unlike standard HTTP file-serving, POST in this context is not to get files, but a JSON AI response
         //The headers contain information on the room information, while the path contains which AI should be accessed
-        if (!req.headers.inputs || !req.headers.output) {
-            res.writeHead(400);
-            return res.end();
-        }
+        let body = [];
+        req.on('data', (chunk) => {
+            body.push(chunk);
+        }).on('end', () => {
+            body = Buffer.concat(body);
+            body = bufferToArray(body);
 
-        switch (q.pathname.split('/')[1]) {
-            case 'standard':
-                //Standard AI, no deep learning
-                res.write(standardAI(req.headers.inputs, req.headers.output));
-                res.writeHead(200);
+            if (body) {
+                postDataComplete(body, req, res);
+            } else {
+                res.writeHead(400);
                 return res.end();
-            case 'personalized':
-                //Deep learning, based on human interactions
-                res.write(personalizedAI(req.headers.inputs, req.headers.output, req.headers.id, q.pathname.split('/')[2]));
-                res.writeHead(200);
-                return res.end();
-        }
+            }
+        });
     }
 });
+
+function postDataComplete(postData, req, res) {
+    let q = url.parse(req.url, true);
+    if (!postData || postData == '' || !req.headers.output) {
+        res.writeHead(400);
+        return res.end();
+    }
+
+    if (postData.length != 2427) {
+        //something went wrong
+        console.log(postData);
+    }
+    postData = [postData];//Interface expects a 2D array
+
+    let st = Date.now();
+
+    switch (q.pathname.split('/')[1]) {
+        case 'standard':
+            //Standard AI, no deep learning
+            let msg = standardAI(postData, req.headers.output);
+            res.write(msg, 'utf8');
+            res.writeHead(200);
+            console.log('Calculation finished in ' + (Date.now() - st) + 'ms');
+            return res.end();
+        case 'personalized':
+            //Deep learning, based on human interactions
+            res.write(personalizedAI(postData, req.headers.output, req.headers.id, q.pathname.split('/')[2]));
+            res.writeHead(200);
+            console.log('Calculation finished in ' + (Date.now() - st) + 'ms');
+            return res.end();
+    }
+}
 
 //Standard self-battling
 function standardAI(inputs, output) {
     //Inputs should be a several-thousand long array of boolean values (false represents 0, true 1)
-    return {answer:leader.evaluate(inputs, output)};
+
+    const response = {answer:AI.leader.evaluate(inputs, output)};
+    const stringResponse = JSON.stringify(response)
+    console.log('AI response sent: ' + stringResponse);
+
+    return stringResponse;
     //Returns an object so that other parameters can be added in the future
 }
 
 function personalizedAI(inputs, output, id, name) {
     //Again, inputs are several-thousand long. This time, however, deep learning is used to retrieve the answer
-    return {answer:players[name].evaluate(inputs, output)};
+    const response = {answer:players[name].evaluate(inputs, output)}
+    return JSON.stringify(response);
     //Returns an object so that other parameters can be added in the future
 }
 

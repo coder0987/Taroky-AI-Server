@@ -12,15 +12,10 @@ const { SUIT,
     PLAYER_TYPE } = require('./enums.js');
 let h5wasm = null;
 async function importH5wasm() {
-    //TODO: uncomment. For some reason H5 really likes to spam the console when the server crashes
-    //if (!DEBUG_MODE) {
-        return;
-    //}
     h5wasm = await import("h5wasm");
     await h5wasm.ready;
-    aiFromFile('latest.h5');
+    leader = AI.aiFromFile('latest.h5');
 }
-importH5wasm();
 
 class AI {
     constructor (seed, mutate){
@@ -32,11 +27,11 @@ class AI {
             this.outputWeights = seed[3]; // 14 x 1k
             this.outputBias = seed[4]; // 14 x 1
         } else {
-            this.inputWeightsSize = [2523,1000];
-            this.layersWeightsSize = [20,1000,1000];
-            this.layersBiasSize = [21,1000];
-            this.outputWeightsSize = [1000,14];
-            this.outputBiasSize = [14];
+            this.inputWeightsSize = [100,2427];
+            this.layersWeightsSize = [5,100,100];
+            this.layersBiasSize = [6,100,1];
+            this.outputWeightsSize = [100,14];
+            this.outputBiasSize = [14,1];
 
             /* CPU-based mathjs style
             this.inputWeights   = math.random(math.matrix([this.inputWeightsSize[0], this.inputWeightsSize[1]])); // 2k x 1k
@@ -52,7 +47,7 @@ class AI {
             }
             this.layersBias     = [];
             for (let i=0; i<this.layersBiasSize[0]; i++) {
-                Interface.createRandomMatrix(this.layersBiasSize[1], 1);
+                this.layersBias[i] = Interface.createRandomMatrix(this.layersBiasSize[1], this.layersBiasSize[2]);
             }
             this.outputWeights  = Interface.createRandomMatrix(this.outputWeightsSize[1], this.outputWeightsSize[0]);
             this.outputBias     = Interface.createRandomMatrix(this.outputBiasSize[0], 1);
@@ -69,7 +64,6 @@ class AI {
             this.outputBias    = math.add(this.outputBias,    math.random([14],             -mutate, mutate));
             */
             this.inputWeights  = mutateMatrix(this.inputWeights , mutate);
-            this.layersBias    = mutateMatrix(this.layersBias   , mutate);
             this.outputWeights = mutateMatrix(this.outputWeights, mutate);
             this.outputBias    = mutateMatrix(this.outputBias   , mutate);
             for (let i in this.layersWeights) {
@@ -134,13 +128,16 @@ class AI {
                 currentRow,
                 this.outputWeights,
                 this.outputBias
-            )[output]
+            )[0][output]
         );
         return result;
     }
 
 
     static sigmoid(z) {
+        if (z == null) {
+            console.trace('null');
+        }
         if (z<-10) {return 0;}
         else if (z>10) {return 1;}
         return 1 / (1 + Math.exp(-z));
@@ -157,6 +154,7 @@ class AI {
         let f;
         let latestAI;
         try {
+            throw 'incomplete';
             const seed = [];
             f = new h5wasm.File(file, "r");
             seed[0] = f.get('/ai/inputWeights', 'r').to_array();
@@ -165,10 +163,11 @@ class AI {
             seed[3] = f.get('/ai/outputWeights', 'r').to_array();
             seed[4] = f.get('/ai/outputBias', 'r').to_array();
             latestAI = new AI(seed, 0);
-            SERVER.log('AI loaded successfully');
+            console.log('AI loaded successfully');
         } catch (err) {
-            SERVER.error('Error reading file from disk: ' + err);
-            //latestAI = new AI(false, 0);
+            console.error('Error reading file from disk: ' + err);
+            latestAI = new AI(false, 0);
+            console.log('AI loaded');
         } finally {
             if (f) {f.close();}
         }
@@ -217,13 +216,14 @@ class AI {
             });
             saveFile.get('ai').create_dataset('outputBias', tempOutputBias, outputBiasShape, '<f');
 
-            SERVER.log('Saved the latest ai ' + Date.now());
+            console.log('Saved the latest ai ' + Date.now());
         } catch (err) {
-            SERVER.error('Error writing file: ' + err);
+            console.error('Error writing file: ' + err);
         } finally {
             if (saveFile) {saveFile.close();}
         }
     }
+    static leader;
 
 //AI
 
@@ -353,4 +353,6 @@ class AI {
     }
 }
 
+//todo importH5wasm();
+AI.leader = AI.aiFromFile('no');
 module.exports = AI;

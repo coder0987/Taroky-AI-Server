@@ -20,6 +20,7 @@ class Interface {
     }
     static createMatrixMultiplierAndAdder(firstWidth, firstHeight, secondWidth, secondHeight, thirdWidth, thirdHeight) {
         if (firstWidth != secondHeight) {
+            console.log(firstWidth + ' != ' + secondHeight);
             throw 'Invalid dimensions for matrix multiplication';
         }
         if (firstHeight != thirdHeight || secondWidth != thirdWidth) {
@@ -33,7 +34,7 @@ class Interface {
         }
     }
     static multiplyAndAddMatrix(inputs, weights, biases) {
-        const multiplyAndAddKernel = createMatrixMultiplierAndAdder(
+        const multiplyAndAddKernel = Interface.createMatrixMultiplierAndAdder(
             inputs[0].length, inputs.length,
             weights[0].length, weights.length,
             biases[0].length, biases.length
@@ -46,7 +47,7 @@ class Interface {
             for (let y = 0; y < h; y++){
                 matrix.push([]);
                 for (let x = 0; x < w; x++){
-                  matrix[y].push(Math.random());
+                  matrix[y].push(Math.random()*2-1);
                 }
             }
             return matrix;
