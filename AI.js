@@ -27,19 +27,19 @@ class AI {
             this.outputWeights = seed[3]; // 14 x 1k
             this.outputBias = seed[4]; // 14 x 1
         } else {
-            this.inputWeightsSize = [100,2427];
-            this.layersWeightsSize = [5,100,100];
-            this.layersBiasSize = [6,100,1];
-            this.outputWeightsSize = [100,14];
-            this.outputBiasSize = [14,1];
+            this.inputWeightsSize  = [50,2427];
+            this.layersWeightsSize = [4,50,50];
+            this.layersBiasSize    = [5,50,1];
+            this.outputWeightsSize = [50,14];
+            this.outputBiasSize    = [14,1];
 
-            /* CPU-based mathjs style
-            this.inputWeights   = math.random(math.matrix([this.inputWeightsSize[0], this.inputWeightsSize[1]])); // 2k x 1k
-            this.layersWeights  = math.random(math.matrix([this.layersWeightsSize[0], this.layersWeightsSize[1], this.layersWeightsSize[2]])); // 20 x 1k x 1k
-            this.layersBias     = math.random(math.matrix([this.layersBiasSize[0], this.layersBiasSize[1]])); // 20 x 1k x 1
-            this.outputWeights  = math.random(math.matrix([this.outputWeightsSize[1], this.outputWeightsSize[0]])); // 14 x 1k
-            this.outputBias     = math.random(math.matrix([this.outputBiasSize[0]])); // 14 x 1
-            */
+            //CPU-based mathjs style
+            this.inputWeights   = math.random(math.matrix([this.inputWeightsSize[1], this.inputWeightsSize[0]]), -1, 1); // 2k x 1k
+            this.layersWeights  = math.random(math.matrix([this.layersWeightsSize[0], this.layersWeightsSize[1], this.layersWeightsSize[2]]), -1, 1); // 20 x 1k x 1k
+            this.layersBias     = math.random(math.matrix([this.layersBiasSize[0], this.layersBiasSize[1]]), -1, 1); // 20 x 1k x 1
+            this.outputWeights  = math.random(math.matrix([this.outputWeightsSize[1], this.outputWeightsSize[0]]), -1, 1); // 14 x 1k
+            this.outputBias     = math.random(math.matrix([this.outputBiasSize[0]]), -1, 1); // 14 x 1
+            /*
             this.inputWeights   = Interface.createRandomMatrix(this.inputWeightsSize[0], this.inputWeightsSize[1]);
             this.layersWeights  = [];
             for (let i=0; i<this.layersWeightsSize[0]; i++) {
@@ -51,18 +51,18 @@ class AI {
             }
             this.outputWeights  = Interface.createRandomMatrix(this.outputWeightsSize[1], this.outputWeightsSize[0]);
             this.outputBias     = Interface.createRandomMatrix(this.outputBiasSize[0], 1);
-
+            */
             mutate = 0;
         }
         if (mutate) {
             //Iterate over each and every weight and bias and add mutate * Math.random() to each
-            /* old mathjs CPU randomization
-            this.inputWeights  = math.add(this.inputWeights,  math.random([2523, 1000],     -mutate, mutate));
-            this.layersWeights = math.add(this.layersWeights, math.random([20, 1000, 2523], -mutate, mutate));
-            this.layersBias    = math.add(this.layersBias,    math.random([21, 1000],       -mutate, mutate));
-            this.outputWeights = math.add(this.outputWeights, math.random([14, 1000],       -mutate, mutate));
-            this.outputBias    = math.add(this.outputBias,    math.random([14],             -mutate, mutate));
-            */
+            //old mathjs CPU randomization
+            this.inputWeights  = math.add(this.inputWeights,  math.random(this.inputWeightsSize , -mutate, mutate));
+            this.layersWeights = math.add(this.layersWeights, math.random(this.layersWeightsSize, -mutate, mutate));
+            this.layersBias    = math.add(this.layersBias,    math.random(this.layersBiasSize   , -mutate, mutate));
+            this.outputWeights = math.add(this.outputWeights, math.random(this.outputWeightsSize, -mutate, mutate));
+            this.outputBias    = math.add(this.outputBias,    math.random(this.outputBiasSize   , -mutate, mutate));
+            /*
             this.inputWeights  = mutateMatrix(this.inputWeights , mutate);
             this.outputWeights = mutateMatrix(this.outputWeights, mutate);
             this.outputBias    = mutateMatrix(this.outputBias   , mutate);
@@ -71,65 +71,66 @@ class AI {
             }
             for (let i in this.layersBias) {
                 this.layersBias[i] = mutateMatrix(this.layersBias[i], mutate);
-            }
+            }*/
         }
     }
 
     evaluate(inputs, output) {
         let result = 0;
 
-        //let currentRow = math.add(math.multiply(inputs, this.inputWeights), this.layersBias.subset(math.index(math.range(0,1),math.range(0,1000))));
-        let currentRow = Interface.multiplyAndAddMatrix(inputs,this.inputWeights,this.layersBias[0]);
-        currentRow = Interface.sigmoidMatrix(currentRow);
+        let currentRow = math.add(math.multiply(inputs, this.inputWeights), this.layersBias.subset(math.index(math.range(0,1),math.range(0,50))));
+        //let currentRow = Interface.multiplyAndAddMatrix(inputs,this.inputWeights,this.layersBias[0]);
+        //currentRow = Interface.sigmoidMatrix(currentRow);
 
         for (let i=0; i<this.layersWeightsSize[0]; i++) {
-            /*currentRow = AI.sigmoidMatrix(
+            currentRow = AI.sigmoidMatrix(
                 math.add(
                     math.multiply(
                         currentRow,
                         math.squeeze(
                             math.subset(
                                 this.layersWeights, math.index(
-                                    i,math.range(0,1000),math.range(0,1000)
+                                    i,math.range(0,50),math.range(0,50)
                                 )
                         ))),
                     math.squeeze(
                         math.subset(this.layersBias, math.index(
-                            i+1,math.range(0,1000)
+                            i+1,math.range(0,50)
                     )))
                 )
-            );*/
+            );/*
             currentRow = Interface.sigmoidMatrix(
                 Interface.multiplyAndAddMatrix(
                     currentRow,
                     this.layersWeights[i],
                     this.layersBias[i+1]
                 )
-            );
+            );*/
         }
-        /*result = AI.sigmoid(
+        result = AI.sigmoid(
             math.add(
                 math.multiply(
                     currentRow,
                     math.squeeze(
                         math.subset(
                             this.outputWeights,
-                            math.index(output, math.range(0,1000))
+                            math.index(+output, math.range(0,50))
                     ))
                 ),
                 math.subset(
                     this.outputBias,
-                    math.index(output)
+                    math.index(+output)
                 )
-            )
-        );*/
+            ).get([0])
+        );
+        /*
         result = AI.sigmoid(
             Interface.multiplyAndAddMatrix(
                 currentRow,
                 this.outputWeights,
                 this.outputBias
             )[0][output]
-        );
+        );*/
         return result;
     }
 
@@ -145,7 +146,7 @@ class AI {
 
     static sigmoidMatrix(m) {
         //Assumes input to be an N x 1 matrix
-        console.trace('Deprecated. Use Interface.sigmoidMatrix() instead')
+        //console.trace('Deprecated. Use Interface.sigmoidMatrix() instead')
         return math.map(math.add(1, math.map(math.subtract(0,m), math.exp)), math.inv);
     }
 
@@ -166,7 +167,7 @@ class AI {
             console.log('AI loaded successfully');
         } catch (err) {
             console.error('Error reading file from disk: ' + err);
-            latestAI = new AI(false, 0);
+            latestAI = new AI(false, 1);
             console.log('AI loaded');
         } finally {
             if (f) {f.close();}
