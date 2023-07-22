@@ -1,5 +1,6 @@
 const math = require('mathjs');
-const Interface = require('./interface.js');
+//const Interface = require('./interface.js');
+//GPUjs was a TON slower than mathjs (25s vs 4s, 2.5s vs 7ms)
 const { SUIT,
     SUIT_REVERSE,
     RED_VALUE,
@@ -21,16 +22,16 @@ class AI {
     constructor (seed, mutate){
         if (seed) {
             //Matrix multiplication: Size[A,B] x Size[B,C] = Size[A,C]
-            this.inputWeights = seed[0]; // 2k x 1k
-            this.layersWeights = seed[1]; // 20 x 1k x 1k
-            this.layersBias = seed[2]; // 20 x 1k x 1
-            this.outputWeights = seed[3]; // 14 x 1k
-            this.outputBias = seed[4]; // 14 x 1
+            this.inputWeights = seed[0];
+            this.layersWeights = seed[1];
+            this.layersBias = seed[2];
+            this.outputWeights = seed[3];
+            this.outputBias = seed[4];
         } else {
-            this.inputWeightsSize  = [50,2427];
-            this.layersWeightsSize = [4,50,50];
-            this.layersBiasSize    = [5,50,1];
-            this.outputWeightsSize = [50,14];
+            this.inputWeightsSize  = [100,2427];
+            this.layersWeightsSize = [6,100,100];
+            this.layersBiasSize    = [7,100,1];
+            this.outputWeightsSize = [100,14];
             this.outputBiasSize    = [14,1];
 
             //CPU-based mathjs style
@@ -90,12 +91,12 @@ class AI {
                         math.squeeze(
                             math.subset(
                                 this.layersWeights, math.index(
-                                    i,math.range(0,50),math.range(0,50)
+                                    i,math.range(0,this.layersWeightsSize[1]),math.range(0,this.layersWeightsSize[2])
                                 )
                         ))),
                     math.squeeze(
                         math.subset(this.layersBias, math.index(
-                            i+1,math.range(0,50)
+                            i+1,math.range(0,this.layersBiasSize[1])
                     )))
                 )
             );/*
@@ -114,7 +115,7 @@ class AI {
                     math.squeeze(
                         math.subset(
                             this.outputWeights,
-                            math.index(+output, math.range(0,50))
+                            math.index(+output, math.range(0,this.outputWeightsSize[0]))
                     ))
                 ),
                 math.subset(
@@ -134,6 +135,15 @@ class AI {
         return result;
     }
 
+    train (inputs, output, value) {
+        //time for some linear regression. YAY.
+        //TODO
+    }
+
+    static winner(ai) {
+        AI.leader = new AI(ai, 0);
+        aiToFile(ai, 'latest.h5');
+    }
 
     static sigmoid(z) {
         if (z == null) {
@@ -167,7 +177,12 @@ class AI {
             console.log('AI loaded successfully');
         } catch (err) {
             console.error('Error reading file from disk: ' + err);
-            latestAI = new AI(false, 1);
+            if (AI.leader) {
+                //personalized AI start out as the best AI that exists so far
+                latestAI = new AI(AI.leader, 0);
+            } else {
+                latestAI = new AI(false, 1);
+            }
             console.log('AI loaded');
         } finally {
             if (f) {f.close();}
@@ -182,7 +197,6 @@ class AI {
             saveFile.create_group('ai');
 
             let tempInputWeights = [];
-            //todo change shape to be a flat array always
             let inputWeightsShape = ai.inputWeightsSize;
             ai.inputWeights.forEach(function (value, index, matrix) {
                 tempInputWeights.push(value);//Lines up the 2d array into 1 dimension

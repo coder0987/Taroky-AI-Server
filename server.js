@@ -37,7 +37,7 @@ const AI = require('./AI.js');
 let followers = [];
 
 let players = {};
-let personalized;
+let personalized = {};
 
 //Interface set up
 const server = http.createServer((req, res) => {
@@ -87,7 +87,40 @@ function postDataComplete(postData, req, res) {
             return res.end();
         case 'personalized':
             //Deep learning, based on human interactions
-            res.write(personalizedAI(postData, req.headers.output, req.headers.id, q.pathname.split('/')[2]));
+            res.write(personalizedAI(postData, req.headers.output, q.pathname.split('/')[2]));
+            res.writeHead(200);
+            console.log('Calculation finished in ' + (Date.now() - st) + 'ms');
+            return res.end();
+        case 'trainPlayer':
+            //For personalized ai meant to imitate a player
+            let w = trainAI(postData, req.headers.output, q.pathname.split('/')[2], req.headers.value);
+            if (w==200 && req.headers.save) {
+                AI.aiToFile(personalized[q.pathname.split('/')[2]],q.pathname.split('/')[2]);
+            }
+            res.writeHead(w);
+            console.log('Calculation finished in ' + (Date.now() - st) + 'ms');
+            return res.end();
+        case 'trainAI':
+            //For standard ai trying to be better against itself
+            switch (q.pathname.split('/')[2]) {
+                case 'play':
+                    let msg = trainAI(req.headers.id, postData, req.headers.output);
+                    res.write(msg, 'utf8');
+                    break;
+                case 'win':
+                    if (players[req.headers.id]) {
+                        AI.leader = players[req.headers.id];
+                        removeAITrainers(req.headers.ids);
+                    } else {
+                        res.writeHead(400);
+                        return res.end();
+                    }
+                    break;
+                case 'create':
+                    createAITrainers(req.headers.ids);
+                    break;
+            }
+
             res.writeHead(200);
             console.log('Calculation finished in ' + (Date.now() - st) + 'ms');
             return res.end();
@@ -106,11 +139,46 @@ function standardAI(inputs, output) {
     //Returns an object so that other parameters can be added in the future
 }
 
-function personalizedAI(inputs, output, id, name) {
+function trainAI(id, inputs, output) {
+    //Inputs should be a several-thousand long array of boolean values (false represents 0, true 1)
+    const response = {answer:players[id].evaluate(inputs, output)};
+    const stringResponse = JSON.stringify(response);
+    //console.log('AI response sent: ' + stringResponse);
+    return stringResponse;
+    //Returns an object so that other parameters can be added in the future
+}
+
+function createAITrainers(ids) {
+    for (let id in ids) {
+        players[id] = new AI(AI.leader.getSeed(), 0.5);
+    }
+}
+
+function removeAITrainers(ids) {
+    for (let id in ids) {
+        delete players[id];
+    }
+}
+
+function personalizedAI(inputs, output, name) {
     //Again, inputs are several-thousand long. This time, however, deep learning is used to retrieve the answer
-    const response = {answer:players[name].evaluate(inputs, output)}
+    const response = {answer:personalized[name].evaluate(inputs, output)}
     return JSON.stringify(response);
     //Returns an object so that other parameters can be added in the future
+}
+
+function trainPersonalizedAI(inputs, output, name, value) {
+    try {
+        if (!personalized[name]) {
+            personalized[name] = AI.aiFromFile(name);
+            //generates a new AI automatically if one doesn't exist
+        }
+        personalized[name].train(inputs, output, value);
+    } catch (error) {
+        console.log(error);
+        return 400;
+    }
+    return 200;
 }
 
 console.log("Listening on port 8441 (Accessible at http://localhost:8441/ )");
