@@ -15,7 +15,7 @@ let h5wasm = null;
 async function importH5wasm() {
     h5wasm = await import("h5wasm");
     await h5wasm.ready;
-    leader = AI.aiFromFile('latest.h5');
+    AI.leader = AI.aiFromFile('latest.h5');
 }
 
 class AI {
@@ -357,13 +357,13 @@ class AI {
             saveFile.create_group('ai');
 
             let inputWeightsShape = ai.inputWeightsSize;
-            /*let tempInputWeights = [];
+            let tempInputWeights = [];
             ai.inputWeights.forEach(function (value, index, matrix) {
                 tempInputWeights.push(value);//Lines up the 2d array into 1 dimension
             });
-            saveFile.get('ai').create_dataset('inputWeights', tempInputWeights, inputWeightsShape, '<f');
-            */
-            saveFile.get('ai').create_dataset('inputWeights', math.flatten(ai.inputWeights), inputWeightsShape, '<f');
+            saveFile.get('ai').create_dataset({name:'inputWeights', data:tempInputWeights, shape:inputWeightsShape, dtype:'<f'});
+
+            //saveFile.get('ai').create_dataset('inputWeights', math.flatten(ai.inputWeights), inputWeightsShape, '<f');
 
             //TODO: use math.flatten for the save file
 
@@ -372,28 +372,28 @@ class AI {
             ai.layersWeights.forEach(function (value, index, matrix) {
                 tempLayersWeights.push(value);//Lines up the 2d array into 1 dimension
             });
-            saveFile.get('ai').create_dataset('layersWeights', tempLayersWeights, layersWeightsShape, '<f');
+            saveFile.get('ai').create_dataset({name:'layersWeights', data:tempLayersWeights, shape:layersWeightsShape, dtype:'<d'});
 
             let tempLayersBias = [];
             let layersBiasShape = ai.layersBiasSize;
             ai.layersBias.forEach(function (value, index, matrix) {
                 tempLayersBias.push(value);//Lines up the 2d array into 1 dimension
             });
-            saveFile.get('ai').create_dataset('layersBias', tempLayersBias, layersBiasShape, '<f');
+            saveFile.get('ai').create_dataset({name:'layersBias', data:tempLayersBias, shape:layersBiasShape, dtype:'<f'});
 
             let tempOutputWeights = [];
             let outputWeightsShape = ai.outputWeightsSize;
             ai.outputWeights.forEach(function (value, index, matrix) {
                 tempOutputWeights.push(value);//Lines up the 2d array into 1 dimension
             });
-            saveFile.get('ai').create_dataset('outputWeights', tempOutputWeights, outputWeightsShape, '<f');
+            saveFile.get('ai').create_dataset({name:'outputWeights', data:tempOutputWeights, shape:outputWeightsShape, dtype:'<f'});
 
             let tempOutputBias = [];
             let outputBiasShape = ai.outputBiasSize;
             ai.outputBias.forEach(function (value, index, matrix) {
                 tempOutputBias.push(value);//Lines up the 2d array into 1 dimension
             });
-            saveFile.get('ai').create_dataset('outputBias', tempOutputBias, outputBiasShape, '<f');
+            saveFile.get('ai').create_dataset({name:'outputBias', data:tempOutputBias, shape:outputBiasShape, dtype:'<f'});
 
             console.log('Saved the latest ai ' + Date.now());
         } catch (err) {
@@ -533,5 +533,5 @@ class AI {
 }
 
 importH5wasm();
-AI.leader = AI.aiFromFile('no');
+//AI.leader = AI.aiFromFile('no');
 module.exports = AI;
