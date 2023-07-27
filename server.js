@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /*
 This is the Taroky AI for MachTarok.com
 
