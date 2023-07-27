@@ -326,7 +326,6 @@ class AI {
         let f;
         let latestAI;
         try {
-            throw 'incomplete';
             const seed = [];
             f = new h5wasm.File(file, "r");
             seed[0] = f.get('/ai/inputWeights', 'r').to_array();
@@ -533,6 +532,6 @@ class AI {
     }
 }
 
-//todo importH5wasm();
+importH5wasm();
 AI.leader = AI.aiFromFile('no');
 module.exports = AI;

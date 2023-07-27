@@ -4,10 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="39674314-987b-40cb-9704-344aa2af9c31" name="Changes" comment="Creates functions for personalized AI">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="39674314-987b-40cb-9704-344aa2af9c31" name="Changes" comment="Adds backpropagation">
       <change beforePath="$PROJECT_DIR$/AI.js" beforeDir="false" afterPath="$PROJECT_DIR$/AI.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/server.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,7 +80,15 @@
       <option name="project" value="LOCAL" />
       <updated>1690058079885</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Adds backpropagation">
+      <option name="closed" value="true" />
+      <created>1690497625112</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1690497625112</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -103,6 +109,7 @@
     <MESSAGE value="Everything works now, just slowly" />
     <MESSAGE value="Blazingly fast using...&#10;&#10;&#10;mathjs. CPU. not gpu" />
     <MESSAGE value="Creates functions for personalized AI" />
-    <option name="LAST_COMMIT_MESSAGE" value="Creates functions for personalized AI" />
+    <MESSAGE value="Adds backpropagation" />
+    <option name="LAST_COMMIT_MESSAGE" value="Adds backpropagation" />
   </component>
 </project>
