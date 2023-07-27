@@ -95,7 +95,7 @@ function postDataComplete(postData, req, res) {
             return res.end();
         case 'trainPlayer':
             //For personalized ai meant to imitate a player
-            let w = trainAI(postData, req.headers.output, q.pathname.split('/')[2], req.headers.value);
+            let w = trainPersonalizedAI(postData, req.headers.output, q.pathname.split('/')[2], req.headers.value);
             if (w==200 && req.headers.save) {
                 AI.aiToFile(personalized[q.pathname.split('/')[2]],q.pathname.split('/')[2]);
             }
@@ -170,16 +170,16 @@ function personalizedAI(inputs, output, name) {
 }
 
 function trainPersonalizedAI(inputs, output, name, value) {
-    try {
+    //try {
         if (!personalized[name]) {
             personalized[name] = AI.aiFromFile(name);
             //generates a new AI automatically if one doesn't exist
         }
-        personalized[name].train(inputs, output, value);
-    } catch (error) {
-        console.log(error);
-        return 400;
-    }
+        personalized[name].backpropagation(inputs, output, value);
+    //} catch (error) {
+       // console.trace(error);
+       // return 400;
+    //}
     return 200;
 }
 
