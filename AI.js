@@ -93,7 +93,7 @@ class AI {
     evaluate(inputs, output) {
         let result = 0;
 
-        let currentRow = math.add(math.multiply(inputs, this.inputWeights), this.layersBias.subset(math.index(math.range(0,1),math.range(0,this.layersBiasSize[1]))));
+        let currentRow = math.add(math.multiply(math.squeeze(inputs), this.inputWeights), this.layersBias.subset(math.index(math.range(0,1),math.range(0,this.layersBiasSize[1]))));
         //let currentRow = Interface.multiplyAndAddMatrix(inputs,this.inputWeights,this.layersBias[0]);
         //currentRow = Interface.sigmoidMatrix(currentRow);
 
@@ -129,7 +129,7 @@ class AI {
                     math.squeeze(
                         math.subset(
                             this.outputWeights,
-                            math.index(+output, math.range(0,this.outputWeightsSize[0]))
+                            math.index(math.range(0,this.outputWeightsSize[0]),+output)
                     ))
                 ),
                 math.subset(
