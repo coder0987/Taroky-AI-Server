@@ -1,4 +1,5 @@
 const math = require('mathjs');
+const fs = require('fs');
 //const Interface = require('./interface.js');
 //GPUjs was a TON slower than mathjs (25s vs 4s, 2.5s vs 7ms)
 const { SUIT,
@@ -360,6 +361,9 @@ class AI {
         let f;
         let latestAI;
         try {
+            if (!fs.existsSync(file)) {
+                throw "File does not yet exist. Creating a new AI...";
+            }
             const seed = [];
             f = new h5wasm.File(file, "r");
             seed[0] = math.squeeze(math.matrix(f.get('/ai/inputWeights', 'r').to_array()));
