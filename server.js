@@ -170,16 +170,16 @@ function personalizedAI(inputs, output, name) {
 }
 
 function trainPersonalizedAI(inputs, output, name, value) {
-    //try {
+    try {
         if (!personalized[name]) {
             personalized[name] = AI.aiFromFile(name);
             //generates a new AI automatically if one doesn't exist
         }
         personalized[name].backpropagation(inputs, output, value);
-    //} catch (error) {
-       // console.trace(error);
-       // return 400;
-    //}
+    } catch (error) {
+        console.trace(error);
+        return 400;
+    }
     return 200;
 }
 

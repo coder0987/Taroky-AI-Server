@@ -15,29 +15,44 @@ let h5wasm = null;
 async function importH5wasm() {
     h5wasm = await import("h5wasm");
     await h5wasm.ready;
-    AI.leader = AI.aiFromFile('latest.h5');
+    //AI.leader = new AI();
+    AI.leader = AI.aiToFile(new AI(), 'latest.h5')
+    //AI.leader = AI.aiFromFile('latest.h5');
 }
 
 class AI {
     constructor (seed, mutate){
-        this.inputWeightsSize  = [100,2427];
+        this.inputWeightsSize  = [2427,100];
         this.layersWeightsSize = [6,100,100];
         this.layersBiasSize    = [7,100,1];
         this.outputWeightsSize = [100,14];
         this.outputBiasSize    = [14,1];
+        this.vIWS = [2427,100];
+        this.vLWS = [6,100,100];
+        this.vLBS = [7,100];
+        this.vOWS = [14,100];
+        this.vOBS = [14];
         if (seed) {
             //Matrix multiplication: Size[A,B] x Size[B,C] = Size[A,C]
+            /*
+            seed[0]'/ai/inputWeights
+            seed[1] /ai/layersWeights
+            seed[2] /ai/layersBias
+            seed[3] /ai/outputWeights
+            seed[4] /ai/outputBias
+            */
             this.inputWeights = seed[0];
             this.layersWeights = seed[1];
             this.layersBias = seed[2];
             this.outputWeights = seed[3];
             this.outputBias = seed[4];
-        } else {
+        }
+        if (!seed) {
             //CPU-based mathjs style
-            this.inputWeights   = math.random(math.matrix([this.inputWeightsSize[1], this.inputWeightsSize[0]]), -1, 1); // 2k x 1k
+            this.inputWeights   = math.random(math.matrix([this.inputWeightsSize[0], this.inputWeightsSize[1]]), -1, 1); // 2k x 1k
             this.layersWeights  = math.random(math.matrix([this.layersWeightsSize[0], this.layersWeightsSize[1], this.layersWeightsSize[2]]), -1, 1); // 20 x 1k x 1k
             this.layersBias     = math.random(math.matrix([this.layersBiasSize[0], this.layersBiasSize[1]]), -1, 1); // 20 x 1k x 1
-            this.outputWeights  = math.random(math.matrix([this.outputWeightsSize[1], this.outputWeightsSize[0]]), -1, 1); // 14 x 1k
+            this.outputWeights  = math.random(math.matrix([this.outputWeightsSize[0], this.outputWeightsSize[1]]), -1, 1); // 14 x 1k
             this.outputBias     = math.random(math.matrix([this.outputBiasSize[0]]), -1, 1); // 14 x 1
             /*
             this.inputWeights   = Interface.createRandomMatrix(this.inputWeightsSize[0], this.inputWeightsSize[1]);
@@ -140,7 +155,7 @@ class AI {
         //console.log('backpropagation called with values: ' + inputs + ' ' + output + ' ' + value);
         //Start by caching values during evaluation
         const a = [];//a is the activation values of each layer of neurons
-        let currentRow = math.add(math.multiply(inputs, this.inputWeights), this.layersBias.subset(math.index(math.range(0,1),math.range(0,this.layersBiasSize[1]))));
+        let currentRow = math.add(math.multiply(math.squeeze(inputs), this.inputWeights), this.layersBias.subset(math.index(math.range(0,1),math.range(0,this.layersBiasSize[1]))));
         a[0] = math.matrix(currentRow);
 
         for (let i=0; i<this.layersWeightsSize[0]; i++) {
@@ -169,7 +184,7 @@ class AI {
                     math.squeeze(
                         math.subset(
                             this.outputWeights,
-                            math.index(0,math.range(0,this.outputWeightsSize[0]))
+                            math.index(math.range(0,this.outputWeightsSize[0]),0)
                         )
                     )
                 ),
@@ -185,14 +200,14 @@ class AI {
         let cost = Math.pow(value - currentRow.get([output]),2);
         //console.log(cost);
 
-        let outputSigCost = math.multiply(
+        let outputSigCost = math.dotMultiply(
                 a[L].get([output]),
-                math.multiply(
+                math.dotMultiply(
                     math.subtract(
                         a[L].get([output]),
                         value
                     ),
-                    math.multiply(
+                    math.dotMultiply(
                         2,
                         math.subtract(
                             1,
@@ -211,16 +226,23 @@ class AI {
         )
         */
 
-        let previousCost = math.multiply(
+        let previousCost = math.squeeze(math.dotMultiply(
             math.subset(this.outputWeights, math.index(
-                output,math.range(0,this.outputWeightsSize[0])
+                math.range(0,this.outputWeightsSize[0]),output
             )), outputSigCost
+        ));
+        math.subset(
+            this.outputWeights,
+            math.index(math.range(0,this.outputWeightsSize[0]),output),
+            math.add(
+                math.squeeze(
+                    math.subset(
+                        this.outputWeights,
+                        math.index(math.range(0,this.outputWeightsSize[0]),output)
+                    )),
+                math.squeeze(outputWeightsCost)
+            )
         );
-        math.subset(this.outputWeights, math.index(
-                        output,math.range(0,this.outputWeightsSize[0])
-                    ), math.add(math.subset(this.outputWeights, math.index(
-                        output,math.range(0,this.outputWeightsSize[0])
-                    )), outputWeightsCost));
         //outputBiasCost is outputSigCost, since it's just that times 1
         math.subset(this.outputBias, math.index(
                         output
@@ -229,37 +251,42 @@ class AI {
                     )), outputSigCost));
 
         //console.log(a);
-        //console.log(previousCost);//should be array [100]
+        //console.log(math.size(previousCost));//should be array [100]
 
         for (let i = this.layersWeightsSize[0]; i > 0; i--) {
+            //console.log('previouscost: ' + math.size(previousCost));//should be 100
             //start in the last layer, with the output
             //in the evaluate function, we've already calculated Z so it should be cached
-            let sigCost = math.multiply(
+            let sigCost = math.squeeze(math.dotMultiply(
                 a[i],
                 math.squeeze(
-                    math.multiply(
-                        math.subtract(
-                            a[i],
-                            previousCost
-                        ),
+                    math.dotMultiply(
+                        previousCost,
                         math.squeeze(
                             math.map(a[i], function(value) {
-                                return (1 - value) * 2
+                                return (1 - value)
                             })
                         )
                     )
                 )
-            );
-            //console.log(sigCost);//should be array 100
-            let layerWeightsCost = math.multiply(
+            ));
+            //console.log('sigcost: ' + math.size(sigCost));//should be array 100
+            let layerWeightsCost = math.dotMultiply(
                 a[i - 1], math.squeeze(sigCost)
             );
-            previousCost = math.multiply(
-                math.squeeze(
-                    math.subset(this.layersWeights, math.index(i - 1, math.range(0,this.layersWeightsSize[1]), math.range(0,this.layersWeightsSize[2])))
-                ),
+            previousCost = math.dotMultiply(
+                    math.squeeze(math.subset(this.layersWeights, math.index(i - 1, 0, math.range(0,this.layersWeightsSize[2])))),
                 math.squeeze(sigCost)
             );
+            for (let j=1; j<this.layersWeightsSize[1]; j++) {
+                previousCost = math.add(
+                    previousCost,
+                    math.dotMultiply(
+                        math.squeeze(math.subset(this.layersWeights, math.index(i - 1, j, math.range(0,this.layersWeightsSize[2])))),
+                        math.squeeze(sigCost)
+                    )
+                );
+            }
             math.subset(
                 this.layersWeights,
                 math.index(i - 1, math.range(0,this.layersWeightsSize[1]), math.range(0,this.layersWeightsSize[2])),
@@ -272,26 +299,33 @@ class AI {
             );
             //let delW1 = a[L - 1][1] * sigmoid(z) * (1 - sigmoid(z)) * 2 * (a[L][output] - value);
         }
+        //console.log(math.size(previousCost));//100 x 100
+        //console.log(math.size(a[0]));//100
         //input weights and biases
-        let inputSigCost = math.multiply(
-            a[0],
-            math.squeeze(
-                math.multiply(
+        let inputSigCost = math.map(
+            math.dotMultiply(
+                a[0],
+                math.dotMultiply(
                     math.subtract(
                         a[0],
                         previousCost
                     ),
                     math.squeeze(
                         math.map(a[0], function(value) {
-                            return (1 - value) * 2
+                            return (1 - value)
                         })
                     )
                 )
-            )
+            ), function(v) {return v*2}
         );
+        //console.log(math.size(inputs));//2427
+        //console.log(math.size(inputSigCost));//1?
+        //console.log(inputSigCost);
         let inputWeightsCost = math.multiply(
             math.transpose(inputs), inputSigCost
         );
+        //console.log(math.size(inputWeightsCost));//2427
+        //console.log(math.size(this.inputWeights));//2427 x 100
         this.inputWeights = math.add(this.inputWeights, inputWeightsCost);
         math.subset(
             this.layersBias,
@@ -328,11 +362,11 @@ class AI {
         try {
             const seed = [];
             f = new h5wasm.File(file, "r");
-            seed[0] = f.get('/ai/inputWeights', 'r').to_array();
-            seed[1] = f.get('/ai/layersWeights', 'r').to_array();
-            seed[2] = f.get('/ai/layersBias', 'r').to_array();
-            seed[3] = f.get('/ai/outputWeights', 'r').to_array();
-            seed[4] = f.get('/ai/outputBias', 'r').to_array();
+            seed[0] = math.squeeze(math.matrix(f.get('/ai/inputWeights', 'r').to_array()));
+            seed[1] = math.squeeze(math.matrix(f.get('/ai/layersWeights', 'r').to_array()));
+            seed[2] = math.squeeze(math.matrix(f.get('/ai/layersBias', 'r').to_array()));
+            seed[3] = math.squeeze(math.matrix(f.get('/ai/outputWeights', 'r').to_array()));
+            seed[4] = math.squeeze(math.matrix(f.get('/ai/outputBias', 'r').to_array()));
             latestAI = new AI(seed, 0);
             console.log('AI loaded successfully');
         } catch (err) {
@@ -356,7 +390,7 @@ class AI {
             saveFile = new h5wasm.File(fileName,'w');
             saveFile.create_group('ai');
 
-            let inputWeightsShape = ai.inputWeightsSize;
+            let inputWeightsShape = ai.vIWS;
             let tempInputWeights = [];
             ai.inputWeights.forEach(function (value, index, matrix) {
                 tempInputWeights.push(value);//Lines up the 2d array into 1 dimension
@@ -368,28 +402,28 @@ class AI {
             //TODO: use math.flatten for the save file
 
             let tempLayersWeights = [];
-            let layersWeightsShape = ai.layersWeightsSize;
+            let layersWeightsShape = ai.vLWS;
             ai.layersWeights.forEach(function (value, index, matrix) {
                 tempLayersWeights.push(value);//Lines up the 2d array into 1 dimension
             });
             saveFile.get('ai').create_dataset({name:'layersWeights', data:tempLayersWeights, shape:layersWeightsShape, dtype:'<d'});
 
             let tempLayersBias = [];
-            let layersBiasShape = ai.layersBiasSize;
+            let layersBiasShape = ai.vLBS;
             ai.layersBias.forEach(function (value, index, matrix) {
                 tempLayersBias.push(value);//Lines up the 2d array into 1 dimension
             });
             saveFile.get('ai').create_dataset({name:'layersBias', data:tempLayersBias, shape:layersBiasShape, dtype:'<f'});
 
             let tempOutputWeights = [];
-            let outputWeightsShape = ai.outputWeightsSize;
+            let outputWeightsShape = ai.vOWS;
             ai.outputWeights.forEach(function (value, index, matrix) {
                 tempOutputWeights.push(value);//Lines up the 2d array into 1 dimension
             });
             saveFile.get('ai').create_dataset({name:'outputWeights', data:tempOutputWeights, shape:outputWeightsShape, dtype:'<f'});
 
             let tempOutputBias = [];
-            let outputBiasShape = ai.outputBiasSize;
+            let outputBiasShape = ai.vOBS;
             ai.outputBias.forEach(function (value, index, matrix) {
                 tempOutputBias.push(value);//Lines up the 2d array into 1 dimension
             });
@@ -401,6 +435,7 @@ class AI {
         } finally {
             if (saveFile) {saveFile.close();}
         }
+        return ai;
     }
     static leader;
 
@@ -533,5 +568,5 @@ class AI {
 }
 
 importH5wasm();
-//AI.leader = AI.aiFromFile('no');
+//AI.leader = new AI();
 module.exports = AI;
