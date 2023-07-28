@@ -89,13 +89,13 @@ function postDataComplete(postData, req, res) {
             return res.end();
         case 'personalized':
             //Deep learning, based on human interactions
-            res.write(personalizedAI(postData, req.headers.output, q.pathname.split('/')[2]));
+            res.write(personalizedAI(postData, req.headers.output, q.pathname.split('/')[2].toLowerCase()));
             res.writeHead(200);
             console.log('Calculation finished in ' + (Date.now() - st) + 'ms');
             return res.end();
         case 'trainPlayer':
             //For personalized ai meant to imitate a player
-            let w = trainPersonalizedAI(postData, req.headers.output, q.pathname.split('/')[2], req.headers.value);
+            let w = trainPersonalizedAI(postData, req.headers.output, q.pathname.split('/')[2].toLowerCase(), req.headers.value);
             if (w==200 && req.headers.save) {
                 AI.aiToFile(personalized[q.pathname.split('/')[2]],q.pathname.split('/')[2]);
             }
