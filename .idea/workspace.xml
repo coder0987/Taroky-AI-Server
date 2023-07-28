@@ -1,16 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="AutoImportSettings">
-    <option name="autoReloadType" value="SELECTIVE" />
-  </component>
   <component name="ChangeListManager">
-    <list default="true" id="39674314-987b-40cb-9704-344aa2af9c31" name="Changes" comment="Adjusts H5WASM save function&#10;Saves first AI file">
-      <change afterPath="$PROJECT_DIR$/smach" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AI.js" beforeDir="false" afterPath="$PROJECT_DIR$/AI.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/latest.h5" beforeDir="false" afterPath="$PROJECT_DIR$/latest.h5" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/server.js" afterDir="false" />
-    </list>
+    <list default="true" id="39674314-987b-40cb-9704-344aa2af9c31" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -20,21 +11,17 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectId" id="2QAV92sDoxEjnIX0Vt8oWie385C" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
-    <ConfirmationsSetting value="2" id="Add" />
-  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Profe/IdeaProjects/Taroky&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true"
   }
-}</component>
+}]]></component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -44,94 +31,6 @@
       <option name="presentableId" value="Default" />
       <updated>1684796219557</updated>
     </task>
-    <task id="LOCAL-00001" summary="Updates gitignore">
-      <option name="closed" value="true" />
-      <created>1689785547675</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1689785547675</updated>
-    </task>
-    <task id="LOCAL-00002" summary="Fixes syntax errors">
-      <option name="closed" value="true" />
-      <created>1689786063457</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1689786063457</updated>
-    </task>
-    <task id="LOCAL-00003" summary="Everything works now, just slowly">
-      <option name="closed" value="true" />
-      <created>1689813242590</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1689813242590</updated>
-    </task>
-    <task id="LOCAL-00004" summary="Blazingly fast using...&#10;&#10;&#10;mathjs. CPU. not gpu">
-      <option name="closed" value="true" />
-      <created>1689814619174</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1689814619175</updated>
-    </task>
-    <task id="LOCAL-00005" summary="Creates functions for personalized AI">
-      <option name="closed" value="true" />
-      <created>1690058079885</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1690058079885</updated>
-    </task>
-    <task id="LOCAL-00006" summary="Adds backpropagation">
-      <option name="closed" value="true" />
-      <created>1690497625112</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1690497625112</updated>
-    </task>
-    <task id="LOCAL-00007" summary="Re-adds H5WASM">
-      <option name="closed" value="true" />
-      <created>1690498897892</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1690498897892</updated>
-    </task>
-    <task id="LOCAL-00008" summary="Adjusts H5WASM save function&#10;Saves first AI file">
-      <option name="closed" value="true" />
-      <created>1690501442061</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1690501442061</updated>
-    </task>
-    <option name="localTasksCounter" value="9" />
     <servers />
-  </component>
-  <component name="Vcs.Log.Tabs.Properties">
-    <option name="TAB_STATES">
-      <map>
-        <entry key="MAIN">
-          <value>
-            <State />
-          </value>
-        </entry>
-      </map>
-    </option>
-  </component>
-  <component name="VcsManagerConfiguration">
-    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Updates gitignore" />
-    <MESSAGE value="Fixes syntax errors" />
-    <MESSAGE value="Everything works now, just slowly" />
-    <MESSAGE value="Blazingly fast using...&#10;&#10;&#10;mathjs. CPU. not gpu" />
-    <MESSAGE value="Creates functions for personalized AI" />
-    <MESSAGE value="Adds backpropagation" />
-    <MESSAGE value="Re-adds H5WASM" />
-    <MESSAGE value="Adjusts H5WASM save function&#10;Saves first AI file" />
-    <option name="LAST_COMMIT_MESSAGE" value="Adjusts H5WASM save function&#10;Saves first AI file" />
   </component>
 </project>
