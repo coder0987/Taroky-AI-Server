@@ -31,7 +31,7 @@ class AI {
         this.vIWS = [2427,100];
         this.vLWS = [6,100,100];
         this.vLBS = [7,100];
-        this.vOWS = [14,100];
+        this.vOWS = [100,14];
         this.vOBS = [14];
         if (seed) {
             //Matrix multiplication: Size[A,B] x Size[B,C] = Size[A,C]
