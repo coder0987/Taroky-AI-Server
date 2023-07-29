@@ -61,6 +61,28 @@ const server = http.createServer((req, res) => {
                 return res.end();
             }
         });
+    } else if (req.method == 'GET') {
+        //For anything that does not require inputs
+        switch (q.pathname.split('/')[1]) {
+            case 'trainAI':
+                switch (q.pathname.split('/')[3]) {
+                    case 'win':
+                        if (players[q.pathname.split('/')[2]]) {
+                            AI.leader = players[q.pathname.split('/')[2]];
+                            removeAITrainers(req.headers.ids);
+                        } else {
+                            res.writeHead(400);
+                            return res.end();
+                        }
+                        break;
+                    case 'create':
+                        createAITrainers(q.pathname.split('/')[2]);
+                        break;
+                }
+                break;
+                res.writeHead(200);
+                return res.end();
+        }
     }
 });
 
@@ -104,22 +126,10 @@ function postDataComplete(postData, req, res) {
             return res.end();
         case 'trainAI':
             //For standard ai trying to be better against itself
-            switch (q.pathname.split('/')[2]) {
+            switch (q.pathname.split('/')[3]) {
                 case 'play':
-                    let msg = trainAI(req.headers.id, postData, req.headers.output);
+                    let msg = trainAI(q.pathname.split('/')[2], postData, req.headers.output);
                     res.write(msg, 'utf8');
-                    break;
-                case 'win':
-                    if (players[req.headers.id]) {
-                        AI.leader = players[req.headers.id];
-                        removeAITrainers(req.headers.ids);
-                    } else {
-                        res.writeHead(400);
-                        return res.end();
-                    }
-                    break;
-                case 'create':
-                    createAITrainers(req.headers.ids);
                     break;
             }
 
@@ -150,9 +160,11 @@ function trainAI(id, inputs, output) {
     //Returns an object so that other parameters can be added in the future
 }
 
-function createAITrainers(ids) {
-    for (let id in ids) {
-        players[id] = new AI(AI.leader.getSeed(), 0.5);
+function createAITrainers(id) {
+    if (id == 'latest') {
+        players[id] = new AI(AI.leader.seed, 0);
+    } else {
+        players[id] = new AI(AI.leader.seed, 0.5);
     }
 }
 

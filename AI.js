@@ -185,7 +185,7 @@ class AI {
                     math.squeeze(
                         math.subset(
                             this.outputWeights,
-                            math.index(math.range(0,this.outputWeightsSize[0]),0)
+                            math.index(0,math.range(0,this.outputWeightsSize[0]))
                         )
                     )
                 ),
@@ -229,17 +229,17 @@ class AI {
 
         let previousCost = math.squeeze(math.dotMultiply(
             math.subset(this.outputWeights, math.index(
-                math.range(0,this.outputWeightsSize[0]),output
+                output,math.range(0,this.outputWeightsSize[0])
             )), outputSigCost
         ));
         math.subset(
             this.outputWeights,
-            math.index(math.range(0,this.outputWeightsSize[0]),output),
+            math.index(output,math.range(0,this.outputWeightsSize[0])),
             math.add(
                 math.squeeze(
                     math.subset(
                         this.outputWeights,
-                        math.index(math.range(0,this.outputWeightsSize[0]),output)
+                        math.index(output,math.range(0,this.outputWeightsSize[0]))
                     )),
                 math.squeeze(outputWeightsCost)
             )
@@ -303,10 +303,7 @@ class AI {
         //console.log(math.size(previousCost));//100 x 100
         //console.log(math.size(a[0]));//100
         //input weights and biases
-        let inputSigCost = math.map(
-            math.dotMultiply(
-                a[0],
-                math.dotMultiply(
+        let inputSigCost = math.dotMultiply(
                     math.subtract(
                         a[0],
                         previousCost
@@ -316,9 +313,7 @@ class AI {
                             return (1 - value)
                         })
                     )
-                )
-            ), function(v) {return v*2}
-        );
+                );
         //console.log(math.size(inputs));//2427
         //console.log(math.size(inputSigCost));//1?
         //console.log(inputSigCost);
