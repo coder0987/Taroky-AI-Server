@@ -362,7 +362,7 @@ class AI {
         let latestAI;
         try {
             if (!fs.existsSync(file)) {
-                throw "File does not yet exist. Creating a new AI...";
+                throw "File (" + file + ") does not yet exist. Creating a new AI...";
             }
             const seed = [];
             f = new h5wasm.File(file, "r");
