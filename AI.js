@@ -391,6 +391,9 @@ class AI {
     static aiToFile(ai, fileName) {
         let saveFile;
         try {
+            if (!ai) {
+                throw "No ai input";
+            }
             saveFile = new h5wasm.File(fileName,'w');
             saveFile.create_group('ai');
 
