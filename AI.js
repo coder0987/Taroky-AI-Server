@@ -185,7 +185,7 @@ class AI {
                     math.squeeze(
                         math.subset(
                             this.outputWeights,
-                            math.index(0,math.range(0,this.outputWeightsSize[0]))
+                            math.index(math.range(0,this.outputWeightsSize[0]),+output)
                         )
                     )
                 ),
@@ -229,17 +229,17 @@ class AI {
 
         let previousCost = math.squeeze(math.dotMultiply(
             math.subset(this.outputWeights, math.index(
-                output,math.range(0,this.outputWeightsSize[0])
+                math.range(0,this.outputWeightsSize[0]),output
             )), outputSigCost
         ));
         math.subset(
             this.outputWeights,
-            math.index(output,math.range(0,this.outputWeightsSize[0])),
+            math.index(math.range(0,this.outputWeightsSize[0]),output),
             math.add(
                 math.squeeze(
                     math.subset(
                         this.outputWeights,
-                        math.index(output,math.range(0,this.outputWeightsSize[0]))
+                        math.index(math.range(0,this.outputWeightsSize[0]),output)
                     )),
                 math.squeeze(outputWeightsCost)
             )
