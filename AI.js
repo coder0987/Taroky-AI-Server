@@ -17,8 +17,8 @@ async function importH5wasm() {
     h5wasm = await import("h5wasm");
     await h5wasm.ready;
     //AI.leader = new AI();
-    AI.leader = AI.aiToFile(new AI(), 'latest.h5')
-    //AI.leader = AI.aiFromFile('latest.h5');
+    //AI.leader = AI.aiToFile(new AI(), 'latest.h5')
+    AI.leader = AI.aiFromFile('latest.h5');
 }
 
 class AI {
@@ -36,7 +36,7 @@ class AI {
         if (seed) {
             //Matrix multiplication: Size[A,B] x Size[B,C] = Size[A,C]
             /*
-            seed[0]'/ai/inputWeights
+            seed[0] /ai/inputWeights
             seed[1] /ai/layersWeights
             seed[2] /ai/layersBias
             seed[3] /ai/outputWeights
@@ -151,6 +151,7 @@ class AI {
     }
 
     backpropagation(inputs, output, value) {
+        //TODO: values tend towards infinity or negative infinity, which causes NaN errors in the save files
         output = +output;
         value = +value;
         //console.log('backpropagation called with values: ' + inputs + ' ' + output + ' ' + value);
