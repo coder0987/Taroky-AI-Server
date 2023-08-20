@@ -119,7 +119,7 @@ function postDataComplete(postData, req, res) {
             //For personalized ai meant to imitate a player
             let w = trainPersonalizedAI(postData, req.headers.output, q.pathname.split('/')[2].toLowerCase(), req.headers.value);
             if (w==200 && req.headers.save) {
-                AI.aiToFile(personalized[q.pathname.split('/')[2].toLowerCase()],q.pathname.split('/')[2].toLowerCase());
+                AI.aiToFile(personalized[q.pathname.split('/')[2].toLowerCase()],q.pathname.split('/')[2].toLowerCase() + '.h5');
             }
             res.writeHead(w);
             console.log('Calculation finished in ' + (Date.now() - st) + 'ms');
@@ -184,7 +184,7 @@ function personalizedAI(inputs, output, name) {
 function trainPersonalizedAI(inputs, output, name, value) {
     try {
         if (!personalized[name]) {
-            personalized[name] = AI.aiFromFile(name);
+            personalized[name] = AI.aiFromFile(name + '.h5');
             //generates a new AI automatically if one doesn't exist
         }
         personalized[name].backpropagation(inputs, output, value);
