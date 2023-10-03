@@ -28,11 +28,6 @@ class AI {
         this.layersBiasSize    = [7,100,1];
         this.outputWeightsSize = [100,14];
         this.outputBiasSize    = [14,1];
-        this.vIWS = [2427,100];
-        this.vLWS = [6,100,100];
-        this.vLBS = [7,100];
-        this.vOWS = [100,14];
-        this.vOBS = [14];
         if (seed) {
             //Matrix multiplication: Size[A,B] x Size[B,C] = Size[A,C]
             /*
@@ -55,39 +50,15 @@ class AI {
             this.layersBias     = math.random(math.matrix([this.layersBiasSize[0], this.layersBiasSize[1]]), -1, 1); // 20 x 1k x 1
             this.outputWeights  = math.random(math.matrix([this.outputWeightsSize[0], this.outputWeightsSize[1]]), -1, 1); // 14 x 1k
             this.outputBias     = math.random(math.matrix([this.outputBiasSize[0]]), -1, 1); // 14 x 1
-            /*
-            this.inputWeights   = Interface.createRandomMatrix(this.inputWeightsSize[0], this.inputWeightsSize[1]);
-            this.layersWeights  = [];
-            for (let i=0; i<this.layersWeightsSize[0]; i++) {
-                this.layersWeights[i] = Interface.createRandomMatrix(this.layersWeightsSize[1], this.layersWeightsSize[2]);
-            }
-            this.layersBias     = [];
-            for (let i=0; i<this.layersBiasSize[0]; i++) {
-                this.layersBias[i] = Interface.createRandomMatrix(this.layersBiasSize[1], this.layersBiasSize[2]);
-            }
-            this.outputWeights  = Interface.createRandomMatrix(this.outputWeightsSize[1], this.outputWeightsSize[0]);
-            this.outputBias     = Interface.createRandomMatrix(this.outputBiasSize[0], 1);
-            */
             mutate = 0;
         }
         if (mutate) {
             //Iterate over each and every weight and bias and add mutate * Math.random() to each
-            //old mathjs CPU randomization
             this.inputWeights  = math.add(this.inputWeights,  math.random(this.inputWeightsSize , -mutate, mutate));
             this.layersWeights = math.add(this.layersWeights, math.random(this.layersWeightsSize, -mutate, mutate));
             this.layersBias    = math.add(this.layersBias,    math.random(this.layersBiasSize   , -mutate, mutate));
             this.outputWeights = math.add(this.outputWeights, math.random(this.outputWeightsSize, -mutate, mutate));
             this.outputBias    = math.add(this.outputBias,    math.random(this.outputBiasSize   , -mutate, mutate));
-            /*
-            this.inputWeights  = mutateMatrix(this.inputWeights , mutate);
-            this.outputWeights = mutateMatrix(this.outputWeights, mutate);
-            this.outputBias    = mutateMatrix(this.outputBias   , mutate);
-            for (let i in this.layersWeights) {
-                this.layersWeights[i] = mutateMatrix(this.layersWeights[i], mutate);
-            }
-            for (let i in this.layersBias) {
-                this.layersBias[i] = mutateMatrix(this.layersBias[i], mutate);
-            }*/
         }
     }
 
@@ -114,14 +85,7 @@ class AI {
                             i+1,math.range(0,this.layersBiasSize[1])
                     )))
                 )
-            );/*
-            currentRow = Interface.sigmoidMatrix(
-                Interface.multiplyAndAddMatrix(
-                    currentRow,
-                    this.layersWeights[i],
-                    this.layersBias[i+1]
-                )
-            );*/
+            );
         }
         result = AI.sigmoid(
             math.add(
@@ -139,14 +103,6 @@ class AI {
                 )
             ).get([0])
         );
-        /*
-        result = AI.sigmoid(
-            Interface.multiplyAndAddMatrix(
-                currentRow,
-                this.outputWeights,
-                this.outputBias
-            )[0][output]
-        );*/
         return result;
     }
 
@@ -245,6 +201,11 @@ class AI {
                 math.squeeze(outputWeightsCost)
             )
         );
+        //TODO: check if this call returns a one or two dimensional array eg [false, false] or [[false],[false]]
+        let outputWeightsHasNaN = math.isNaN(this.outputWeights).some((e) => e === true);
+        if (outputWeightsHasNaN) {
+            console.log('Error detected: NaN present in outputWeights');
+        }
         //outputBiasCost is outputSigCost, since it's just that times 1
         math.subset(this.outputBias, math.index(
                         output
@@ -393,7 +354,7 @@ class AI {
             saveFile = new h5wasm.File(fileName,'w');
             saveFile.create_group('ai');
 
-            let inputWeightsShape = ai.vIWS;
+            let inputWeightsShape = ai.inputWeightsSize;
             let tempInputWeights = [];
             ai.inputWeights.forEach(function (value, index, matrix) {
                 tempInputWeights.push(value);//Lines up the 2d array into 1 dimension
@@ -405,28 +366,28 @@ class AI {
             //TODO: use math.flatten for the save file
 
             let tempLayersWeights = [];
-            let layersWeightsShape = ai.vLWS;
+            let layersWeightsShape = ai.layersWeightsSize;
             ai.layersWeights.forEach(function (value, index, matrix) {
                 tempLayersWeights.push(value);//Lines up the 2d array into 1 dimension
             });
             saveFile.get('ai').create_dataset({name:'layersWeights', data:tempLayersWeights, shape:layersWeightsShape, dtype:'<d'});
 
             let tempLayersBias = [];
-            let layersBiasShape = ai.vLBS;
+            let layersBiasShape = ai.layersBiasSize;
             ai.layersBias.forEach(function (value, index, matrix) {
                 tempLayersBias.push(value);//Lines up the 2d array into 1 dimension
             });
             saveFile.get('ai').create_dataset({name:'layersBias', data:tempLayersBias, shape:layersBiasShape, dtype:'<f'});
 
             let tempOutputWeights = [];
-            let outputWeightsShape = ai.vOWS;
+            let outputWeightsShape = ai.outputWeightsSize;
             ai.outputWeights.forEach(function (value, index, matrix) {
                 tempOutputWeights.push(value);//Lines up the 2d array into 1 dimension
             });
             saveFile.get('ai').create_dataset({name:'outputWeights', data:tempOutputWeights, shape:outputWeightsShape, dtype:'<f'});
 
             let tempOutputBias = [];
-            let outputBiasShape = ai.vOBS;
+            let outputBiasShape = ai.outputBiasSize;
             ai.outputBias.forEach(function (value, index, matrix) {
                 tempOutputBias.push(value);//Lines up the 2d array into 1 dimension
             });
