@@ -63,6 +63,158 @@ class Checks {
         return result;
     }
 
+    backpropagation(inputs, output, value) {
+        output = +output;
+        value = +value;
+
+        //Step 1: Evaluate as normal but cache all activation values
+        const a = [];//a is the activation values of each layer of neurons
+        let currentRow = Checks.inputsToRow(inputs, this);
+        a[0] = math.matrix(currentRow);
+
+        for (let i=0; i<this.layersWeightsSize[0]; i++) {
+            currentRow = Checks.advanceRow(currentRow, i, this);
+            a[i+1] = math.matrix(currentRow);
+        }
+        currentRow = evaluateAllResults(currentRow, this);
+
+        a[a.length] = math.matrix(currentRow);
+        const L = a.length - 1;
+
+        //TODO change to step-by-step approach and add tests
+
+        let cost = Math.pow(value - currentRow.get([output]),2);
+        //console.log(cost);
+
+        let outputSigCost = math.dotMultiply(
+                a[L].get([output]),
+                math.dotMultiply(
+                    math.subtract(
+                        a[L].get([output]),
+                        value
+                    ),
+                    math.dotMultiply(
+                        2,
+                        math.subtract(
+                            1,
+                            a[L].get([output])
+                        )
+                    )
+                )
+            );
+        let outputWeightsCost = math.multiply(
+            a[L - 1], outputSigCost
+        );
+
+        let previousCost = math.squeeze(math.dotMultiply(
+            math.subset(this.outputWeights, math.index(
+                math.range(0,this.outputWeightsSize[0]),output
+            )), outputSigCost
+        ));
+        math.subset(
+            this.outputWeights,
+            math.index(math.range(0,this.outputWeightsSize[0]),output),
+            math.add(
+                math.squeeze(
+                    math.subset(
+                        this.outputWeights,
+                        math.index(math.range(0,this.outputWeightsSize[0]),output)
+                    )),
+                math.squeeze(outputWeightsCost)
+            )
+        );
+        //TODO: check if this call returns a one or two dimensional array eg [false, false] or [[false],[false]]
+        let outputWeightsHasNaN = math.isNaN(this.outputWeights).some((e) => e === true);
+        if (outputWeightsHasNaN) {
+            console.log('Error detected: NaN present in outputWeights');
+        }
+        //outputBiasCost is outputSigCost, since it's just that times 1
+        math.subset(this.outputBias, math.index(
+                        output
+                    ), math.add(math.subset(this.outputBias, math.index(
+                        output
+                    )), outputSigCost));
+
+        //console.log(a);
+        //console.log(math.size(previousCost));//should be array [100]
+
+        for (let i = this.layersWeightsSize[0]; i > 0; i--) {
+            //console.log('previouscost: ' + math.size(previousCost));//should be 100
+            //start in the last layer, with the output
+            //in the evaluate function, we've already calculated Z so it should be cached
+            let sigCost = math.squeeze(math.dotMultiply(
+                a[i],
+                math.squeeze(
+                    math.dotMultiply(
+                        previousCost,
+                        math.squeeze(
+                            math.map(a[i], function(value) {
+                                return (1 - value)
+                            })
+                        )
+                    )
+                )
+            ));
+            //console.log('sigcost: ' + math.size(sigCost));//should be array 100
+            let layerWeightsCost = math.dotMultiply(
+                a[i - 1], math.squeeze(sigCost)
+            );
+            previousCost = math.dotMultiply(
+                    math.squeeze(math.subset(this.layersWeights, math.index(i - 1, 0, math.range(0,this.layersWeightsSize[2])))),
+                math.squeeze(sigCost)
+            );
+            for (let j=1; j<this.layersWeightsSize[1]; j++) {
+                previousCost = math.add(
+                    previousCost,
+                    math.dotMultiply(
+                        math.squeeze(math.subset(this.layersWeights, math.index(i - 1, j, math.range(0,this.layersWeightsSize[2])))),
+                        math.squeeze(sigCost)
+                    )
+                );
+            }
+            math.subset(
+                this.layersWeights,
+                math.index(i - 1, math.range(0,this.layersWeightsSize[1]), math.range(0,this.layersWeightsSize[2])),
+                math.add(math.squeeze(math.subset(this.layersWeights, math.index(i - 1, math.range(0,this.layersWeightsSize[1]), math.range(0,this.layersWeightsSize[2])))), layerWeightsCost)
+            );
+            math.subset(
+                this.layersBias,
+                math.index(i, math.range(0,this.layersBiasSize[1])),
+                math.add(math.squeeze(math.subset(this.layersBias,math.index(i, math.range(0,this.layersBiasSize[1])))), sigCost)
+            );
+            //let delW1 = a[L - 1][1] * sigmoid(z) * (1 - sigmoid(z)) * 2 * (a[L][output] - value);
+        }
+        //console.log(math.size(previousCost));//100 x 100
+        //console.log(math.size(a[0]));//100
+        //input weights and biases
+        let inputSigCost = math.dotMultiply(
+                    math.subtract(
+                        a[0],
+                        previousCost
+                    ),
+                    math.squeeze(
+                        math.map(a[0], function(value) {
+                            return (1 - value)
+                        })
+                    )
+                );
+        //console.log(math.size(inputs));//2427
+        //console.log(math.size(inputSigCost));//1?
+        //console.log(inputSigCost);
+        let inputWeightsCost = math.multiply(
+            math.transpose(inputs), inputSigCost
+        );
+        //console.log(math.size(inputWeightsCost));//2427
+        //console.log(math.size(this.inputWeights));//2427 x 100
+        this.inputWeights = math.add(this.inputWeights, inputWeightsCost);
+        math.subset(
+            this.layersBias,
+            math.index(0, math.range(0,this.layersBiasSize[1])),
+            math.add(math.squeeze(math.subset(this.layersBias,math.index(0, math.range(0,this.layersBiasSize[1])))), inputSigCost)
+        );
+        return cost;
+    }
+
     static inputsToRow(inputs, ai, testing) {
         //Step 1: Get the inputs and multiply them by the weights
         //  Size 1B        =                 1A   x   AB
@@ -153,6 +305,26 @@ class Checks {
         }
 
         return bounded;
+    }
+
+    static evaluateAllResults(currentRow, ai) {
+        //TODO change to step-by-step
+        return Checks.sigmoidMatrix(
+                math.add(
+                    math.multiply(
+                        currentRow,
+                        math.squeeze(
+                            math.subset(
+                                ai.outputWeights,
+                                math.index(math.range(0,ai.outputWeightsSize[0]),+output)
+                            )
+                        )
+                    ),
+                    math.squeeze(
+                        ai.outputBias
+                    )
+                )
+            );
     }
 
     static sigmoid(z) {

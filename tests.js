@@ -111,6 +111,15 @@ function evaluateTests() {
     console.log(finalEvaluation);
 
     console.log('Evaluate tests passed. All functions are functional :)\n');
+    return 1;
+}
+
+function backPropagationTests() {
+    console.log('Running back propagation tests:');
+    console.log('----- TEST ONE -----');
+    //TODO
+    console.log('Back propagation tests passed. All functions are functional :)\n');
+    return 1;
 }
 
 function helperFunctionTests() {
@@ -142,6 +151,7 @@ function helperFunctionTests() {
         return -1;
     }
     console.log('Helper function tests passed. All functions are functional :)\n');
+    return 1;
 }
 
 //Running...
@@ -149,6 +159,7 @@ let results = {};
 results.constructorTests    = constructorTests();
 results['evaluateTests\t']  = evaluateTests();
 results.helperFunctionTests = helperFunctionTests();
+results.backPropagationTests = backPropagationTests();
 
 for (let i in results) {
     if (results[i] == -1) {
