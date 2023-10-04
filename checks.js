@@ -63,81 +63,33 @@ class Checks {
         return result;
     }
 
-    backpropagation(inputs, output, value) {
+    backpropagation(inputs, output, value, stepSize) {
         output = +output;
         value = +value;
 
         //Step 1: Evaluate as normal but cache all activation values
-        const a = [];//a is the activation values of each layer of neurons
-        let currentRow = Checks.inputsToRow(inputs, this);
-        a[0] = math.matrix(currentRow);
-
-        for (let i=0; i<this.layersWeightsSize[0]; i++) {
-            currentRow = Checks.advanceRow(currentRow, i, this);
-            a[i+1] = math.matrix(currentRow);
-        }
-        currentRow = evaluateAllResults(currentRow, this);
-
-        a[a.length] = math.matrix(currentRow);
+        const a = evaluateAndCache(inputs, this);
         const L = a.length - 1;
 
-        //TODO change to step-by-step approach and add tests
+        //Step 2: Beginning at the end and working back, get the cost of the function (the square of the difference between expected and actual output, then divide the result by 2)
+        let cost = Math.pow(value - currentRow.get([output]),2) / 2;
 
-        let cost = Math.pow(value - currentRow.get([output]),2);
-        //console.log(cost);
+        //Step 3: OutputSigCost (aka outputBiasCost) which can be multiplied by the activation function outputs to find the outputWeights cost
+        let outputSigCost = findOutputSigCost(a, value, output, L);
 
-        let outputSigCost = math.dotMultiply(
-                a[L].get([output]),
-                math.dotMultiply(
-                    math.subtract(
-                        a[L].get([output]),
-                        value
-                    ),
-                    math.dotMultiply(
-                        2,
-                        math.subtract(
-                            1,
-                            a[L].get([output])
-                        )
-                    )
-                )
-            );
-        let outputWeightsCost = math.multiply(
-            a[L - 1], outputSigCost
-        );
+        //Step 4: outputWeightsCost, the amount that must be subtracted from the output weights to reduce the cost function
+        let outputWeightsCost = findOutputsWeightCost(outputSigCost, stepSize, a, L);
 
-        let previousCost = math.squeeze(math.dotMultiply(
-            math.subset(this.outputWeights, math.index(
-                math.range(0,this.outputWeightsSize[0]),output
-            )), outputSigCost
-        ));
-        math.subset(
-            this.outputWeights,
-            math.index(math.range(0,this.outputWeightsSize[0]),output),
-            math.add(
-                math.squeeze(
-                    math.subset(
-                        this.outputWeights,
-                        math.index(math.range(0,this.outputWeightsSize[0]),output)
-                    )),
-                math.squeeze(outputWeightsCost)
-            )
-        );
-        //TODO: check if this call returns a one or two dimensional array eg [false, false] or [[false],[false]]
-        let outputWeightsHasNaN = math.isNaN(this.outputWeights).some((e) => e === true);
-        if (outputWeightsHasNaN) {
-            console.log('Error detected: NaN present in outputWeights');
-        }
-        //outputBiasCost is outputSigCost, since it's just that times 1
-        math.subset(this.outputBias, math.index(
-                        output
-                    ), math.add(math.subset(this.outputBias, math.index(
-                        output
-                    )), outputSigCost));
+        //Step 5: Obtain the previous cost for use down the line in the backpropagation
+        let previousCost = findPreviousCost(this, output, outputSigCost);
 
-        //console.log(a);
-        //console.log(math.size(previousCost));//should be array [100]
+        //Step 6: Subtract the delta from the weights to reduce the cost function
+        applyOutputWeightsCostReduction(this, output, outputWeightsCost);
 
+        //Step 7: Do the same for the biases
+        applyOutputBiasCostReduction(this, output, outputSigCost);
+
+        //TODO: finish step-by-step process for backpropagation
         for (let i = this.layersWeightsSize[0]; i > 0; i--) {
             //console.log('previouscost: ' + math.size(previousCost));//should be 100
             //start in the last layer, with the output
@@ -213,6 +165,91 @@ class Checks {
             math.add(math.squeeze(math.subset(this.layersBias,math.index(0, math.range(0,this.layersBiasSize[1])))), inputSigCost)
         );
         return cost;
+    }
+
+    static evaluateAndCache(inputs, ai) {
+        const a = [];
+
+        //Step 1: Inputs
+        let currentRow = Checks.inputsToRow(inputs, ai);
+        a[0] = math.matrix(currentRow);
+
+        //Step 2: Hidden layers
+        for (let i=0; i<ai.layersWeightsSize[0]; i++) {
+            currentRow = Checks.advanceRow(currentRow, i, ai);
+            a[i+1] = math.matrix(currentRow);
+        }
+
+        //Step 3: Outputs
+        currentRow = evaluateAllResults(currentRow, ai);
+        a[a.length] = math.matrix(currentRow);
+
+        return a;
+    }
+
+    static findOutputSigCost(a, value, output, L) {
+        //Goal: find the derivative of the sigmoid function across all output Oj:
+            //Oj * ( 1 - Oj)
+        //This can then be multiplied by the difference between sig(Oj) and target Tj to acquire Dj, the difference which we multiply by the step size N to subtract from Oj to reduce the cost function
+
+        //Step 1: subtract the actual value from 1
+        let startingCost = math.subtract(1, a[L].get([output]));
+
+        //Step 2: Find the difference between the target value and the actual value
+        let actualVsExpected = math.subtract(a[L].get([output]),value);
+
+        //Step 3: Multiply those terms together to get (Oj - Tj)(1 - Oj)
+        let costDifXStartingCost = math.dotMultiply(actualVsExpected,startingCost);
+
+        //Step 4: Multiply by Oj again to complete the function
+        let outputSigCost = math.dotMultiply(a[L].get([output]),costDifXStartingCost);
+
+        return outputSigCost;
+    }
+
+    static findOutputsWeightCost(outputSigCost, stepSize, a, L) {
+        //Goal: using the outputSigCost Dj we can multiply it by stepSize N and the activation value a[L - 1] to find the DELTAj to subtract from each Oj to reduce the cost
+
+        //Step 1: multiply the sig cost by the activation value
+        let outputsWeightCost = math.multiply(a[L - 1], outputSigCost);
+
+        //Step 2: multiply that result by the step size to determine DELTAj
+        let step = math.multiply(stepSize, outputsWeightCost);
+
+        return step;
+    }
+
+    static findPreviousCost(ai, output, outputSigCost) {
+        //Step 1: Retrieve the subset of output weights
+        let subsetOfWeights = math.subset(ai.outputWeights, math.index(math.range(0,ai.outputWeightsSize[0]),output));
+
+        //Step 2: Multiply each weight by the sig cost
+        let subsetOfWeightsXSigCost = math.squeeze(math.dotMultiply(subsetOfWeights, outputSigCost));
+
+        return subsetOfWeightsXSigCost;
+    }
+
+    static applyOutputWeightsCostReduction(ai, output, outputWeightsCost) {
+        math.subset(
+            ai.outputWeights,
+            math.index(math.range(0,ai.outputWeightsSize[0]),output),
+            math.subtract(
+                math.squeeze(
+                    math.subset(
+                        ai.outputWeights,
+                        math.index(math.range(0,ai.outputWeightsSize[0]),output)
+                    )),
+                math.squeeze(outputWeightsCost)
+            )
+        );
+    }
+
+    static applyOutputBiasCostReduction(ai, output, outputSigCost) {
+        math.subset(ai.outputBias, math.index(
+                output
+            ), math.add(math.subset(ai.outputBias, math.index(
+                output
+            )), outputSigCost));
     }
 
     static inputsToRow(inputs, ai, testing) {
