@@ -75,19 +75,19 @@ class Checks {
         let cost = Math.pow(value - currentRow.get([output]),2) / 2;
 
         //Step 3: OutputSigCost (aka outputBiasCost) which can be multiplied by the activation function outputs to find the outputWeights cost
-        let outputSigCost = findOutputSigCost(a, value, output, L);
+        let outputSigCost = Checks.findOutputSigCost(a, value, output, L);
 
         //Step 4: outputWeightsCost, the amount that must be subtracted from the output weights to reduce the cost function
-        let outputWeightsCost = findOutputsWeightCost(outputSigCost, stepSize, a, L);
+        let outputWeightsCost = Checks.findOutputsWeightCost(outputSigCost, stepSize, a, L);
 
         //Step 5: Obtain the previous cost for use down the line in the backpropagation
-        let previousCost = findPreviousCost(this, output, outputSigCost);
+        let previousCost = Checks.findPreviousCost(this, output, outputSigCost);
 
         //Step 6: Subtract the delta from the weights to reduce the cost function
-        applyOutputWeightsCostReduction(this, output, outputWeightsCost);
+        Checks.applyOutputWeightsCostReduction(this, output, outputWeightsCost);
 
         //Step 7: Do the same for the biases
-        applyOutputBiasCostReduction(this, output, outputSigCost);
+        Checks.applyOutputBiasCostReduction(this, output, outputSigCost);
 
         //TODO: finish step-by-step process for backpropagation
         for (let i = this.layersWeightsSize[0]; i > 0; i--) {
