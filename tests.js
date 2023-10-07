@@ -117,7 +117,27 @@ function evaluateTests() {
 function backPropagationTests() {
     console.log('Running back propagation tests:');
     console.log('----- TEST ONE -----');
-    //TODO
+    let first = new Checks();
+    let firstInputs = math.random(math.matrix([2427]), -1, 1);
+
+    let firstResult = first.evaluate(firstInputs, 2);
+    console.log(firstResult);
+
+    let firstCost = first.backpropagation(firstInputs, 2, 0, 0);
+    for (let i=0; i<1000; i++) {
+        let costDif = firstCost - first.backpropagation(firstInputs, 2, 0, 1);
+        if (i%100==0) {
+            console.log(costDif);
+        }
+    }
+    let secondCost = first.backpropagation(firstInputs, 2, 0, 0);
+    console.log(firstCost + ': ' + firstResult);
+    console.log(secondCost + ': ' + first.evaluate(firstInputs, 2));
+    if (secondCost > firstCost) {
+        console.log('Failed backpropagation test: the cost increased rather than decreased.')
+        return -1;
+    }
+    //TODO: test the additional backpropagation functions for matrix size changes
     console.log('Back propagation tests passed. All functions are functional :)\n');
     return 1;
 }

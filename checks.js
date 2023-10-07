@@ -68,7 +68,9 @@ class Checks {
         value = +value;
 
         //Step 1: Evaluate as normal but cache all activation values
-        const a = evaluateAndCache(inputs, this);
+        const evaluateAndCacheReturnValue = Checks.evaluateAndCache(inputs, this, output);
+        const a = evaluateAndCacheReturnValue.a;
+        let currentRow = evaluateAndCacheReturnValue.currentRow;
         const L = a.length - 1;
 
         //Step 2: Beginning at the end and working back, get the cost of the function (the square of the difference between expected and actual output, then divide the result by 2)
@@ -89,33 +91,21 @@ class Checks {
         //Step 7: Do the same for the biases
         Checks.applyOutputBiasCostReduction(this, output, outputSigCost);
 
-        //TODO: finish step-by-step process for backpropagation
         for (let i = this.layersWeightsSize[0]; i > 0; i--) {
             //console.log('previouscost: ' + math.size(previousCost));//should be 100
             //start in the last layer, with the output
             //in the evaluate function, we've already calculated Z so it should be cached
-            let sigCost = math.squeeze(math.dotMultiply(
-                a[i],
-                math.squeeze(
-                    math.dotMultiply(
-                        previousCost,
-                        math.squeeze(
-                            math.map(a[i], function(value) {
-                                return (1 - value)
-                            })
-                        )
-                    )
-                )
-            ));
+
+            //Step 8: Find the sig cost for each layer
+            let sigCost = Checks.findSigCost(a, previousCost, i);
             //console.log('sigcost: ' + math.size(sigCost));//should be array 100
-            let layerWeightsCost = math.dotMultiply(
-                a[i - 1], math.squeeze(sigCost)
-            );
-            previousCost = math.dotMultiply(
-                    math.squeeze(math.subset(this.layersWeights, math.index(i - 1, 0, math.range(0,this.layersWeightsSize[2])))),
-                math.squeeze(sigCost)
-            );
-            for (let j=1; j<this.layersWeightsSize[1]; j++) {
+
+            //Step 9: Get the Layer Weight Cost
+            let layerWeightsCost = math.dotMultiply(a[i - 1], math.squeeze(sigCost));
+
+            //Step 10: Advance Previous Cost up 1 Layer
+            previousCost = 0;
+            for (let j=0; j<this.layersWeightsSize[1]; j++) {
                 previousCost = math.add(
                     previousCost,
                     math.dotMultiply(
@@ -124,50 +114,49 @@ class Checks {
                     )
                 );
             }
+
+            //Step 12: Apply the derivative to the network
             math.subset(
                 this.layersWeights,
                 math.index(i - 1, math.range(0,this.layersWeightsSize[1]), math.range(0,this.layersWeightsSize[2])),
-                math.add(math.squeeze(math.subset(this.layersWeights, math.index(i - 1, math.range(0,this.layersWeightsSize[1]), math.range(0,this.layersWeightsSize[2])))), layerWeightsCost)
+                math.subtract(math.squeeze(math.subset(this.layersWeights, math.index(i - 1, math.range(0,this.layersWeightsSize[1]), math.range(0,this.layersWeightsSize[2])))), layerWeightsCost)
             );
+
+            //Step 13: Apply the derivative to the biases
             math.subset(
                 this.layersBias,
                 math.index(i, math.range(0,this.layersBiasSize[1])),
-                math.add(math.squeeze(math.subset(this.layersBias,math.index(i, math.range(0,this.layersBiasSize[1])))), sigCost)
+                math.subtract(math.squeeze(math.subset(this.layersBias,math.index(i, math.range(0,this.layersBiasSize[1])))), sigCost)
             );
             //let delW1 = a[L - 1][1] * sigmoid(z) * (1 - sigmoid(z)) * 2 * (a[L][output] - value);
         }
         //console.log(math.size(previousCost));//100 x 100
         //console.log(math.size(a[0]));//100
         //input weights and biases
-        let inputSigCost = math.dotMultiply(
-                    math.subtract(
-                        a[0],
-                        previousCost
-                    ),
-                    math.squeeze(
-                        math.map(a[0], function(value) {
-                            return (1 - value)
-                        })
-                    )
-                );
-        //console.log(math.size(inputs));//2427
-        //console.log(math.size(inputSigCost));//1?
+
+        //Step 14: Find the input sig cost
+        let inputSigCost = math.dotMultiply(previousCost,math.squeeze(math.map(a[0], function(value) {return (1 - value) })));
+
+        //console.log(math.size([inputs]));//2427
+        //console.log(math.size([inputSigCost]));//100
         //console.log(inputSigCost);
-        let inputWeightsCost = math.multiply(
-            math.transpose(inputs), inputSigCost
-        );
-        //console.log(math.size(inputWeightsCost));//2427
+
+        //Step 15: Find input weights cost  [1x2427] x [1x100]
+        let inputWeightsCost = math.multiply(math.transpose([inputs]), [inputSigCost]);
+
+        //console.log(math.size(inputWeightsCost));//2427 x 100
         //console.log(math.size(this.inputWeights));//2427 x 100
-        this.inputWeights = math.add(this.inputWeights, inputWeightsCost);
-        math.subset(
-            this.layersBias,
-            math.index(0, math.range(0,this.layersBiasSize[1])),
-            math.add(math.squeeze(math.subset(this.layersBias,math.index(0, math.range(0,this.layersBiasSize[1])))), inputSigCost)
-        );
+
+        //Step 16: Apply the derivative to the network
+        this.inputWeights = math.subtract(this.inputWeights, inputWeightsCost);
+
+        //Step 17: Apply the derivative to the biases
+        math.subset(this.layersBias,math.index(0, math.range(0,this.layersBiasSize[1])),math.subtract(math.squeeze(math.subset(this.layersBias,math.index(0, math.range(0,this.layersBiasSize[1])))), inputSigCost));
+
         return cost;
     }
 
-    static evaluateAndCache(inputs, ai) {
+    static evaluateAndCache(inputs, ai, output) {
         const a = [];
 
         //Step 1: Inputs
@@ -181,10 +170,10 @@ class Checks {
         }
 
         //Step 3: Outputs
-        currentRow = evaluateAllResults(currentRow, ai);
+        currentRow = Checks.evaluateAllResults(currentRow, ai, output);
         a[a.length] = math.matrix(currentRow);
 
-        return a;
+        return {a,currentRow};
     }
 
     static findOutputSigCost(a, value, output, L) {
@@ -250,6 +239,22 @@ class Checks {
             ), math.add(math.subset(ai.outputBias, math.index(
                 output
             )), outputSigCost));
+    }
+
+    static findSigCost(a, previousCost, i) {
+        //SigCost = Activation[i-1] * (1 - Activation[i]) * previousCost
+        //Previous cost = prediction - actual for each element
+
+        //Step 1: Subtract a[i] from 1
+        let dif1A = math.squeeze(math.map(a[i], function(value) {return (1 - value)}));
+
+        //Step 2: Multiply by Previous Cost
+        let dif1AXPrevious = math.squeeze(math.dotMultiply(previousCost, dif1A));
+
+        //Step 3: Multiply by a[i-1]
+        let final = math.squeeze(math.dotMultiply(a[i - 1], dif1AXPrevious));
+
+        return final;
     }
 
     static inputsToRow(inputs, ai, testing) {
@@ -344,7 +349,7 @@ class Checks {
         return bounded;
     }
 
-    static evaluateAllResults(currentRow, ai) {
+    static evaluateAllResults(currentRow, ai, output) {
         //TODO change to step-by-step
         return Checks.sigmoidMatrix(
                 math.add(
